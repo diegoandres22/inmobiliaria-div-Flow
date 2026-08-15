@@ -1,9 +1,7 @@
-"use client";
-
-import { useEffect, useRef } from "react";
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
-
+// Google Maps Embed API — decisión explícita del cliente sobre MapTiler/
+// maplibre-gl: sin costo, sin SDK cargado en el cliente, sin billing account.
+// Es un iframe de solo lectura (no hay pin arrastrable ni eventos de click),
+// pero acá en la ficha pública el mapa nunca necesitó ser interactivo.
 interface PropertyMapProps {
   lat: number;
   lng: number;
@@ -11,38 +9,13 @@ interface PropertyMapProps {
   className?: string;
 }
 
-const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY;
+const EMBED_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY;
 
 // Sin clave configurada, no se intenta renderizar un mapa roto — mismo
 // criterio que WhatsAppCTA y el footer de redes: fallback honesto, no un
 // componente a medias.
 export function PropertyMap({ lat, lng, title, className }: PropertyMapProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
-
-  useEffect(() => {
-    if (!MAPTILER_KEY || !containerRef.current || mapRef.current) return;
-
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`,
-      center: [lng, lat],
-      zoom: 15,
-    });
-
-    map.addControl(new maplibregl.NavigationControl(), "top-right");
-    // #0F6E56 = --color-brand-accent-dark — hardcodeado porque maplibre no lee CSS vars
-    new maplibregl.Marker({ color: "#0F6E56" }).setLngLat([lng, lat]).addTo(map);
-
-    mapRef.current = map;
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
-  }, [lat, lng]);
-
-  if (!MAPTILER_KEY) {
+  if (!EMBED_KEY) {
     return (
       <div className={className}>
         <div className="flex h-full flex-col items-center justify-center gap-1 rounded-[var(--radius)] border border-dashed border-border bg-brand-neutral p-8 text-center">
@@ -51,18 +24,23 @@ export function PropertyMap({ lat, lng, title, className }: PropertyMapProps) {
           </p>
           <p className="text-xs text-muted-foreground">
             Ubicación aproximada de &quot;{title}&quot; — se activa con
-            NEXT_PUBLIC_MAPTILER_KEY en producción.
+            NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY en producción.
           </p>
         </div>
       </div>
     );
   }
 
+  const src = `https://www.google.com/maps/embed/v1/place?key=${EMBED_KEY}&q=${lat},${lng}&zoom=15`;
+
   return (
-    <div
-      ref={containerRef}
+    <iframe
+      src={src}
       className={className}
-      role="application"
+      style={{ border: 0 }}
+      loading="lazy"
+      referrerPolicy="no-referrer-when-downgrade"
+      title={`Mapa de ubicación de ${title}`}
       aria-label={`Mapa de ubicación de ${title}`}
     />
   );

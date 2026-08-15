@@ -52,6 +52,9 @@ export default async function AdminLeadsPage({ searchParams }: LeadsPageProps) {
               Solo spam
             </Link>
           </Button>
+          <Button variant="outline" size="sm" asChild>
+            <a href="/admin/leads/export">Exportar CSV</a>
+          </Button>
         </div>
       </div>
 
@@ -79,7 +82,7 @@ export default async function AdminLeadsPage({ searchParams }: LeadsPageProps) {
                       {lead.handled_at ? (
                         <Badge variant="secondary">Atendido</Badge>
                       ) : (
-                        <Badge>Pendiente</Badge>
+                        <Badge variant="warning">Pendiente</Badge>
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground">

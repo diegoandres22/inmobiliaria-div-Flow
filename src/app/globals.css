@@ -18,6 +18,9 @@
   --color-muted-foreground: #6b6b67;
   --color-destructive: #d14343;
   --color-destructive-foreground: #ffffff;
+  --color-warning: #f59e0b; /* amber-500 — borde, urgencia visual (ej. lead pendiente) */
+  --color-warning-bg: #fef3c7; /* amber-100 — fondo suave */
+  --color-warning-foreground: #92400e; /* amber-800 — texto legible sobre warning-bg */
   --color-ring: var(--color-brand-accent);
 
   --radius: 0.625rem;

@@ -37,7 +37,11 @@ export function PropertyLeadForm({ propertyId }: { propertyId: string }) {
 
   if (status === "sent") {
     return (
-      <p className="rounded-[var(--radius)] border border-brand-accent bg-brand-neutral p-4 text-sm text-foreground">
+      <p
+        role="status"
+        aria-live="polite"
+        className="rounded-[var(--radius)] border border-brand-accent bg-brand-neutral p-4 text-sm text-foreground"
+      >
         Mensaje enviado — el agente te va a contactar pronto.
       </p>
     );
@@ -72,7 +76,7 @@ export function PropertyLeadForm({ propertyId }: { propertyId: string }) {
         {status === "sending" ? "Enviando..." : "Enviar mensaje"}
       </Button>
       {status === "error" && (
-        <p className="text-xs text-destructive">
+        <p role="alert" aria-live="assertive" className="text-xs text-destructive">
           Algo salió mal. Probá de nuevo en unos segundos.
         </p>
       )}

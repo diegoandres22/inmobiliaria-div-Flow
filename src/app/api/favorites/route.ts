@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateFavoritesSessionId } from "@/lib/session/favorites-session";
+import { checkRateLimit } from "@/lib/security/rate-limit";
+import { hashIp } from "@/lib/security/hash-ip";
+import { isSameOrigin } from "@/lib/security/same-origin";
 
 const bodySchema = z.object({ propertyId: z.string().uuid() });
 
@@ -9,10 +13,28 @@ const bodySchema = z.object({ propertyId: z.string().uuid() });
 // favorites tiene RLS pública (session_id no está atado a auth), por eso el
 // session_id sale siempre del cookie httpOnly del server, nunca del body.
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: "Origen inválido" }, { status: 403 });
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "propertyId inválido" }, { status: 400 });
+  }
+
+  // No tenía ningún límite — un script podía togglear favoritos sin freno.
+  // Bajo impacto (no expone datos), pero es abuso de recursos gratis.
+  const headersList = await headers();
+  const ip =
+    headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const { success: withinRateLimit } = await checkRateLimit(
+    `favorites:${hashIp(ip)}`,
+    30,
+    60_000,
+  );
+  if (!withinRateLimit) {
+    return NextResponse.json({ error: "Demasiados intentos." }, { status: 429 });
   }
 
   const sessionId = await getOrCreateFavoritesSessionId();

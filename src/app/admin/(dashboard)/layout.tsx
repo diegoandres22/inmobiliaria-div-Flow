@@ -50,6 +50,14 @@ export default async function AdminDashboardLayout({
                   Agentes
                 </Link>
               )}
+              {agent?.isSuperAgent && (
+                <Link href="/admin/auditoria" className="hover:text-brand-accent-dark">
+                  Auditoría
+                </Link>
+              )}
+              <Link href="/admin/mi-cuenta" className="hover:text-brand-accent-dark">
+                Mi cuenta
+              </Link>
             </nav>
           </div>
           <LogoutButton />

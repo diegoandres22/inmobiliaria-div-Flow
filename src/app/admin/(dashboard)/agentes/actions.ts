@@ -132,12 +132,26 @@ export async function deleteAgent(agentId: string) {
     .eq("id", agentId)
     .single();
 
+  // properties.agent_id es NOT NULL con FK ON DELETE RESTRICT a propósito
+  // (nunca perder un listado por accidente al borrar un agente). En vez de
+  // bloquear el borrado, transferimos sus propiedades al super-agente que
+  // ejecuta la acción — así el agente se puede eliminar siempre y ningún
+  // listado queda huérfano ni se pierde en el camino.
+  const { data: reassigned, error: reassignError } = await supabase
+    .from("properties")
+    .update({ agent_id: currentAgent.id })
+    .eq("agent_id", agentId)
+    .select("id");
+
+  if (reassignError) throw new Error(reassignError.message);
+  const reassignedCount = reassigned?.length ?? 0;
+
   const { error } = await supabase.from("agents").delete().eq("id", agentId);
 
   if (error) {
     if (error.code === "23503") {
       throw new Error(
-        "No se puede eliminar: este agente todavía tiene propiedades asignadas.",
+        "No se puede eliminar: este agente todavía tiene datos asociados que no se pudieron transferir.",
       );
     }
     throw new Error(error.message);
@@ -149,4 +163,8 @@ export async function deleteAgent(agentId: string) {
   }
 
   revalidatePath("/admin/agentes");
+  revalidatePath("/admin/propiedades");
+  revalidatePath("/admin");
+
+  return { reassignedProperties: reassignedCount ?? 0 };
 }

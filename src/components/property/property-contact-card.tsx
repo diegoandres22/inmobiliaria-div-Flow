@@ -2,11 +2,17 @@ import { MessageCircle, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Agent } from "@/types/property";
 
+// El RPC get_property_by_slug embebe el agente sin agencyId (ver
+// PropertyDetail en types/property.ts) — este componente tampoco lo usa,
+// así que el contrato pide exactamente los campos que sí llegan y renderiza,
+// no el tipo Agent completo.
+type ContactAgent = Pick<Agent, "id" | "name" | "email" | "phone" | "whatsapp">;
+
 export function PropertyContactCard({
   agent,
   propertyTitle,
 }: {
-  agent: Agent;
+  agent: ContactAgent;
   propertyTitle: string;
 }) {
   const message = encodeURIComponent(

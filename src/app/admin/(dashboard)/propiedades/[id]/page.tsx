@@ -8,12 +8,15 @@ import { updateProperty } from "../actions";
 
 interface EditPropertyPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ created?: string; imageErrors?: string }>;
 }
 
 export default async function EditPropertyPage({
   params,
+  searchParams,
 }: EditPropertyPageProps) {
   const { id } = await params;
+  const { created, imageErrors } = await searchParams;
   const supabase = await createClient();
 
   const [
@@ -52,6 +55,25 @@ export default async function EditPropertyPage({
       <h1 className="mb-6 font-heading text-xl text-foreground">
         Editar propiedad
       </h1>
+
+      {created === "1" && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="mb-6 rounded-[var(--radius)] border border-brand-accent bg-brand-neutral p-3 text-sm text-foreground"
+        >
+          Propiedad creada correctamente — queda como borrador hasta que la publiques.
+        </p>
+      )}
+      {imageErrors && (
+        <p
+          role="alert"
+          aria-live="assertive"
+          className="mb-6 rounded-[var(--radius)] border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+        >
+          La propiedad se creó, pero algunas fotos no se pudieron subir: {imageErrors}. Probá subirlas de nuevo acá abajo.
+        </p>
+      )}
 
       <div className="mb-8 space-y-2">
         <label className="text-sm font-medium text-foreground">

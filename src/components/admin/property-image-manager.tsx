@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, useTransition, type ChangeEvent } from "react";
+import { useRef, useState, useTransition, type ChangeEvent } from "react";
 import Image from "next/image";
 import { Star, Trash2, Upload } from "lucide-react";
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   uploadPropertyImages,
   deletePropertyImage,
@@ -24,6 +26,8 @@ export function PropertyImageManager({
   images: PropertyImage[];
 }) {
   const [isPending, startTransition] = useTransition();
+  const [errors, setErrors] = useState<string[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleUpload(e: ChangeEvent<HTMLInputElement>) {
@@ -31,9 +35,39 @@ export function PropertyImageManager({
     if (!files || files.length === 0) return;
     const formData = new FormData();
     Array.from(files).forEach((f) => formData.append("images", f));
+    setErrors([]);
     startTransition(async () => {
-      await uploadPropertyImages(propertyId, formData);
+      const result = await uploadPropertyImages(propertyId, formData);
+      setErrors(result.errors);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (result.uploaded > 0) {
+        toast.success(
+          result.uploaded === 1
+            ? "1 imagen subida."
+            : `${result.uploaded} imágenes subidas.`,
+        );
+      }
+      if (result.errors.length > 0) {
+        toast.error(
+          result.errors.length === 1
+            ? "1 imagen no se pudo subir — revisá el detalle abajo."
+            : `${result.errors.length} imágenes no se pudieron subir — revisá el detalle abajo.`,
+        );
+      }
+    });
+  }
+
+  function handleDeleteConfirm() {
+    if (!deleteTarget) return;
+    const imageId = deleteTarget;
+    setDeleteTarget(null);
+    startTransition(async () => {
+      try {
+        await deletePropertyImage(propertyId, imageId);
+        toast.success("Imagen eliminada.");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "No se pudo eliminar la imagen.");
+      }
     });
   }
 
@@ -75,12 +109,7 @@ export function PropertyImageManager({
                 <button
                   type="button"
                   disabled={isPending}
-                  onClick={() => {
-                    if (!confirm("¿Eliminar esta imagen?")) return;
-                    startTransition(() =>
-                      deletePropertyImage(propertyId, img.id),
-                    );
-                  }}
+                  onClick={() => setDeleteTarget(img.id)}
                   aria-label="Eliminar imagen"
                   className="flex size-8 items-center justify-center rounded-full bg-white text-destructive hover:scale-105"
                 >
@@ -98,13 +127,37 @@ export function PropertyImageManager({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp"
           multiple
           className="hidden"
           disabled={isPending}
           onChange={handleUpload}
         />
       </label>
+      <p className="text-xs text-muted-foreground">
+        JPEG, PNG o WEBP — máximo 8 MB por imagen.
+      </p>
+      {errors.length > 0 && (
+        <ul
+          role="alert"
+          aria-live="assertive"
+          className="space-y-1 rounded-[var(--radius)] border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive"
+        >
+          {errors.map((err) => (
+            <li key={err}>{err}</li>
+          ))}
+        </ul>
+      )}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title="¿Eliminar esta imagen?"
+        description="No se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }
