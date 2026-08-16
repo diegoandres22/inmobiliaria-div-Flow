@@ -31,15 +31,20 @@ interface SearchPropertiesRow {
 export async function searchProperties(filters: PropertyFilters) {
   const supabase = await createClient();
 
+  // El tipo generado del RPC define estos parámetros como opcionales
+  // (?: T, con DEFAULT NULL del lado de Postgres), no como `T | null` — pasar
+  // `undefined` en vez de `null` produce exactamente el mismo request (la
+  // key se omite del JSON, Postgres aplica su propio default), así que esto
+  // no cambia el comportamiento real, solo el tipo con el que se lo describe.
   const { data, error } = await supabase.rpc("search_properties", {
-    p_operacion: filters.operacion ?? null,
-    p_tipo: filters.tipo ?? null,
-    p_ciudad: filters.ciudad ?? null,
-    p_precio_min: filters.precioMin ?? null,
-    p_precio_max: filters.precioMax ?? null,
-    p_habitaciones: filters.habitaciones ?? null,
-    p_banos: filters.banos ?? null,
-    p_estacionamientos: filters.estacionamientos ?? null,
+    p_operacion: filters.operacion ?? undefined,
+    p_tipo: filters.tipo ?? undefined,
+    p_ciudad: filters.ciudad ?? undefined,
+    p_precio_min: filters.precioMin ?? undefined,
+    p_precio_max: filters.precioMax ?? undefined,
+    p_habitaciones: filters.habitaciones ?? undefined,
+    p_banos: filters.banos ?? undefined,
+    p_estacionamientos: filters.estacionamientos ?? undefined,
     p_comodidades: filters.comodidades,
     p_orden: filters.orden,
     p_pagina: filters.pagina,

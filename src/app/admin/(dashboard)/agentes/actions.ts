@@ -58,7 +58,11 @@ export async function createAgent(
     auth_user_id: created.user.id,
     name: values.name,
     email: values.email,
-    phone: values.phone || null,
+    // phone es NOT NULL en la base (a diferencia de whatsapp) — "" en vez de
+    // null si el campo vino vacío. Antes de tipar el cliente con Database
+    // esto compilaba igual pero habría roto el insert en runtime con una
+    // violación de constraint apenas alguien dejara el teléfono en blanco.
+    phone: values.phone || "",
     whatsapp: values.whatsapp || null,
     agency_id: values.agencyId,
     is_super_agent: values.isSuperAgent,
@@ -107,7 +111,7 @@ export async function updateAgent(agentId: string, formData: FormData) {
     .update({
       name: values.name,
       email: values.email,
-      phone: values.phone || null,
+      phone: values.phone || "",
       whatsapp: values.whatsapp || null,
       agency_id: values.agencyId,
       is_super_agent: values.isSuperAgent,

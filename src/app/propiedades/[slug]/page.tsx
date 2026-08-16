@@ -30,7 +30,11 @@ async function getProperty(slug: string): Promise<PropertyDetail | null> {
   });
 
   if (error || !data) return null;
-  return data as PropertyDetail;
+  // El RPC devuelve `jsonb` — el tipo generado lo tipa como `Json` (unión
+  // genérica), que no overlapea lo suficiente con PropertyDetail para un
+  // cast directo. El shape real lo arma el propio RPC en Postgres
+  // (get_property_by_slug), confiamos en ese contrato igual que antes.
+  return data as unknown as PropertyDetail;
 }
 
 function formatPrice(property: PropertyDetail) {
