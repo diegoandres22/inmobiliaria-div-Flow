@@ -66,8 +66,20 @@ const WHERE_TO_GET_IT: Record<string, string> = {
   UPSTASH_REDIS_REST_TOKEN: "Upstash → base Redis → REST API",
 };
 
+// Vercel (y otros) exponen una variable declarada en el dashboard pero sin
+// valor cargado como string vacío ("") en process.env, no como ausente. Zod
+// `.optional()` solo perdona `undefined` — sin este paso, una var opcional
+// "declarada pero vacía" fallaba igual que si tuviera un valor inválido
+// (bug real: así reventó el primer deploy de este cambio en Vercel).
+// Tratamos "" como "no seteada" para TODAS las keys antes de validar.
+function emptyStringsToUndefined(input: NodeJS.ProcessEnv) {
+  return Object.fromEntries(
+    Object.entries(input).map(([key, value]) => [key, value === "" ? undefined : value]),
+  );
+}
+
 function loadEnv() {
-  const result = envSchema.safeParse(process.env);
+  const result = envSchema.safeParse(emptyStringsToUndefined(process.env));
 
   if (!result.success) {
     const lines = result.error.issues.map((issue) => {

@@ -6,6 +6,9 @@ import { customAlphabet } from "nanoid";
 import { createClient } from "@/lib/supabase/server";
 import { propertyFormSchema } from "@/lib/validation/property-form";
 import { validateImageFile } from "@/lib/security/validate-image";
+import type { Database } from "@/types/database.types";
+
+type PropertyStatus = Database["public"]["Enums"]["property_status"];
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 8);
 
@@ -143,7 +146,12 @@ export async function updatePropertyStatus(
   }
 
   const supabase = await createClient();
-  const patch: Record<string, unknown> = { status: nextStatus };
+  // Tipado explícito contra el Update real de Supabase — un
+  // Record<string, unknown> "suelto" ya no es asignable a `.update()` ahora
+  // que los clientes están tipados con Database (ver src/lib/supabase/).
+  const patch: Database["public"]["Tables"]["properties"]["Update"] = {
+    status: nextStatus as PropertyStatus,
+  };
   if (nextStatus === "publicada" && currentStatus === "borrador") {
     patch.published_at = new Date().toISOString();
   }
@@ -158,7 +166,7 @@ export async function updatePropertyStatus(
     .from("properties")
     .update(patch)
     .eq("id", propertyId)
-    .eq("status", currentStatus)
+    .eq("status", currentStatus as PropertyStatus)
     .select("id");
 
   if (error) throw new Error(error.message);
