@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+// Corre la validación de env vars apenas Next evalúa este archivo — es decir,
+// antes de arrancar `next dev`/`next build`. Si falta algo requerido, el
+// proceso corta acá con un mensaje claro (ver src/env.ts) en vez de fallar
+// más tarde en producción con un 500 opaco.
+import "./src/env";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false, // no exponer "X-Powered-By: Next.js"

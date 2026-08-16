@@ -31,7 +31,8 @@
 8. (Opcional, cuando haya dominio) Configurar dominio propio.
 9. (Opcional, recomendado) Configurar Resend + SMTP custom en Supabase.
 10. Configurar Upstash.
-11. QA final antes de recibir tráfico real.
+11. Cargar los Secrets de GitHub Actions para que el CI corra en verde.
+12. QA final antes de recibir tráfico real.
 
 ---
 
@@ -51,6 +52,7 @@ Usar este repositorio como template o clonarlo directo. No hace falta tocar nada
    select tablename, rowsecurity from pg_tables where schemaname = 'public';
    ```
 5. Cargar el catálogo base: al menos una `agency` y un `agent` con `is_super_agent = true`, vinculado a un usuario real de `auth.users` (ver paso siguiente) vía `auth_user_id`.
+6. Generar los tipos de TypeScript del esquema real: `pnpm db:types` (requiere tener la Supabase CLI instalada y logueada: `npx supabase login`). El script en `package.json` apunta al `project-id` del proyecto original (`kglnrkvwqkyfxcvgncam`) — **actualizar ese valor** en `package.json` (`"db:types"`) al `project-id` del proyecto Supabase nuevo antes de correrlo. Esto sobrescribe `src/types/database.types.ts` — no editarlo a mano.
 
 ### 3.3 Configurar Supabase Auth
 
@@ -88,6 +90,8 @@ Copiar `.env.example` a `.env.local` (desarrollo) y cargar las mismas en Vercel 
 | `GOOGLE_MAPS_GEOCODING_API_KEY` | Google Cloud Console — fallback server-side cuando el link de Maps pegado en el admin no trae coordenadas embebidas | No |
 
 **En Vercel específicamente:** si el dashboard bloquea la creación de una variable `NEXT_PUBLIC_*` con el aviso "Mantenga este valor en privado. El prefijo NEXT_PUBLIC_ expone este valor al navegador" — **no** quitar el prefijo `NEXT_PUBLIC_` (rompe el cliente de Supabase en el browser). Ese aviso aparece cuando la variable quedó marcada como "Sensitive" (encriptada, ilegible después de creada) — para una variable que necesita ir al bundle del cliente, desmarcar "Sensitive" al crearla, o desactivar la política de equipo "Enforce Sensitive Environment Variables" en *Team Settings → Security & Privacy* si está forzada a nivel organización.
+
+**Validación automática:** `src/env.ts` valida con Zod las tres variables obligatorias (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) apenas arranca `next dev`/`next build` — si falta alguna, o tiene un formato inválido, el proceso corta con un mensaje claro de cuál falta y de dónde sacarla, en vez de fallar más tarde en producción con un 500 genérico (esto es justamente lo que pasó la primera vez que se desplegó este proyecto — ver sección 5).
 
 ### 3.5 Editar `src/config/client.config.ts`
 
@@ -143,9 +147,23 @@ Los campos marcados `// TODO(cliente)` en el archivo son los que hay que complet
 3. Cargarla como `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY`.
 4. Opcional: habilitar **Geocoding API** y cargar `GOOGLE_MAPS_GEOCODING_API_KEY` (server-side, no restringir por referrer) — mejora la resolución automática de coordenadas cuando el link de Google Maps pegado en el admin no las trae embebidas. Sin esto, el parseo por regex y la carga manual de lat/lng siguen funcionando.
 
-### 3.12 QA final antes de recibir tráfico real
+### 3.12 GitHub Actions (CI)
 
-- [ ] `pnpm typecheck && pnpm lint && pnpm build` pasan limpio.
+`.github/workflows/ci.yml` corre automáticamente `pnpm typecheck`/`pnpm lint` en cada PR/push a `develop` y `main` (no necesitan secrets), y `pnpm build` en un segundo job que sí los necesita. En el repo de GitHub: *Settings → Secrets and variables → Actions → New repository secret*, cargar como mínimo:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `IP_HASH_SALT`
+- `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY` (si se usa Maps)
+
+Sin estos, el job `build` del CI falla — no por un error de código, sino porque `src/env.ts` corta el build al no encontrar las variables (ver 3.4). El job `typecheck-and-lint` sí corre en verde sin ningún secret configurado.
+
+### 3.13 QA final antes de recibir tráfico real
+
+- [ ] `pnpm typecheck && pnpm lint && pnpm build` pasan limpio localmente.
+- [ ] El CI de GitHub Actions corre en verde en el PR de `develop` → `main` (ambos jobs, incluido `build` con los Secrets cargados).
+- [ ] `src/types/database.types.ts` está actualizado (`pnpm db:types`) si hubo cambios de esquema desde el último deploy.
 - [ ] Login con email/contraseña y con Google (si está habilitado) funcionan en el dominio real de producción (no redirige a `localhost`).
 - [ ] Activar 2FA en una cuenta de prueba y confirmar que el challenge se pide en el próximo login.
 - [ ] Crear una propiedad completa (con imágenes, ubicación, comodidades), publicarla, verificar que aparece en el listado público y que la ficha carga bien.
@@ -179,3 +197,5 @@ Antes de fusionar `develop` → `main`, correr la QA de la sección 3.12 sobre `
 | Toggle "Leaked Password Protection" no aparece en el dashboard de Supabase | Feature gateada al plan Pro | Confirmar el plan del proyecto; no es un problema de navegación de la UI |
 | `git checkout <rama>` falla con `fatal: not a git repository` | La carpeta `.git` se borró o se corrompió | `git init && git remote add origin <url> && git fetch origin && git symbolic-ref HEAD refs/heads/develop && git update-ref refs/heads/develop origin/develop && git reset` — reconecta el repo sin tocar ningún archivo del working tree |
 | Warning de hidratación en consola con atributos `bis_skin_checked` | Extensión del navegador (Bitdefender) inyectando atributos en el DOM antes de que React hidrate | No es un bug del código — probar en incógnito sin extensiones para confirmar |
+| El job `build` del CI (GitHub Actions) falla, pero `typecheck-and-lint` pasa | Faltan los Secrets del repo (ver 3.12) | Cargar `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`/`SUPABASE_SERVICE_ROLE_KEY`/`IP_HASH_SALT` en Settings → Secrets and variables → Actions |
+| `next build`/`next dev` corta con "Configuración de entorno inválida" | `src/env.ts` detectó una variable requerida faltante o con formato inválido (ver mensaje, indica cuál) | Completar `.env.local` (dev) o las Environment Variables de Vercel (prod) según el mensaje — no es un bug, es la validación funcionando |

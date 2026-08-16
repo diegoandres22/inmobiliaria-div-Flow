@@ -1,12 +1,13 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import type { Database } from "@/types/database.types";
 
 // Cliente para Server Components / Server Actions — respeta RLS, usa la
 // sesión del usuario vía cookies. El refresh de sesión lo maneja middleware.ts.
 export async function createClient() {
   const cookieStore = await cookies();
 
-  return createServerClient(
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {

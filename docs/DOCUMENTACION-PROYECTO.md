@@ -20,7 +20,7 @@ Está construido como una **base white-label**: toda la identidad de marca (nomb
 |---|---|---|
 | **Next.js 16.3** (App Router) | Framework full-stack | Server Components para todo lo que no necesita interactividad (listados, fichas, dashboard admin) reduce el JS que baja al cliente; Server Actions evitan escribir API routes a mano para cada mutación; File-based routing con route groups (`(dashboard)`) separa el layout del panel admin del resto del sitio sin duplicar código. |
 | **React 19.2** | UI | Requerido por Next 16. Se usan hooks estándar (`useState`, `useTransition`, `useOptimistic` en algunos formularios) sin librerías de estado global — la app no lo necesita, los datos viven en el servidor y se refrescan con `revalidatePath`. |
-| **TypeScript 5.9 (strict)** | Todo el código | Sin `any` implícito, sin `strictNullChecks` relajado. Los tipos de Supabase (`src/types/`) están escritos a mano reflejando el esquema real — no autogenerados, así que si el esquema cambia hay que actualizarlos a mano (ver sección 10). |
+| **TypeScript 5.9 (strict)** | Todo el código | Sin `any` implícito, sin `strictNullChecks` relajado. `src/types/database.types.ts` se autogenera desde el esquema real de Supabase (`pnpm db:types`); los tipos de dominio en `src/types/property.ts` y similares (camelCase, para consumo de componentes) siguen siendo manuales por diseño — ver sección 9. |
 | **Supabase** (Postgres 17 + PostGIS + Auth + Storage) | Backend completo | Una sola pieza de infraestructura cubre base de datos relacional, autenticación (password + Google OAuth + MFA TOTP), Row Level Security como capa de autorización real (no solo en la app), y Storage para imágenes. Evita mantener un backend propio para un catálogo de este tamaño. |
 | **Tailwind CSS v4** | Estilos | Utilidades atómicas, sin CSS-in-JS. La v4 define el design system en `@theme` dentro de `globals.css` (tokens de color, tipografía, radios) en vez de un `tailwind.config.js` — todo el sistema de diseño vive en un solo archivo CSS. |
 | **shadcn/ui + Radix UI** | Componentes base (`src/components/ui/`) | Componentes accesibles (focus trap, ARIA, teclado) sin pagar el peso de una librería de componentes completa — se copian al repo y se adaptan, no son una dependencia de npm que actualizar. |
@@ -34,21 +34,29 @@ Está construido como una **base white-label**: toda la identidad de marca (nomb
 
 ## 3. Arquitectura general
 
-```
-Visitante ─────────────► Next.js (Vercel) ─────────────► Supabase
-(público)                 │                                │
-                           ├─ Server Components             ├─ Postgres (RLS)
-                           ├─ Server Actions                ├─ Auth (password + Google OAuth + TOTP)
-                           ├─ Route Handlers (/api/*)        └─ Storage (imágenes)
-                           └─ middleware.ts (sesión + CSP)
-                                    │
-Agente/Admin ──────────────────────┘
-(autenticado)
+```mermaid
+flowchart LR
+    Visitante["Visitante (público)"] --> Next
+    Agente["Agente / Admin (autenticado)"] --> Next
 
-Servicios externos:
-  Upstash Redis   → rate limiting (login, reset, leads)
-  Resend          → email transaccional
-  Google Maps     → embed de mapa + geocoding fallback
+    subgraph Next["Next.js (Vercel)"]
+        MW["middleware.ts — sesión + CSP"]
+        SC["Server Components"]
+        SA["Server Actions"]
+        RH["Route Handlers /api/*"]
+    end
+
+    Next --> Supabase
+
+    subgraph Supabase
+        PG["Postgres + RLS"]
+        Auth["Auth — password + Google OAuth + TOTP"]
+        Storage["Storage — imágenes"]
+    end
+
+    Next -.-> Upstash["Upstash Redis — rate limiting"]
+    Next -.-> Resend["Resend — email transaccional"]
+    Next -.-> Maps["Google Maps — embed + geocoding fallback"]
 ```
 
 **Dos clientes de Supabase, con propósitos distintos:**
@@ -272,9 +280,10 @@ Ninguno de los puntos de 8.2/8.3 bloquea producción — el proyecto ya pasó po
 - **Toda mutación admin** debe hacer `.select()` de la fila afectada tras el `UPDATE`/`DELETE`/`INSERT` y verificar que realmente afectó filas — así un bloqueo silencioso de RLS se reporta como error real, no como éxito falso.
 - **Toda función Postgres nueva** debe declarar explícitamente `SECURITY INVOKER` (default, preferido) o justificar por qué necesita `SECURITY DEFINER`, y en ese caso `SET search_path = ''` para evitar hijacking de funciones por schema.
 - **Antes de agregar una policy RLS nueva**, consultar `pg_policies` de la tabla real — no asumir el estado a partir de comentarios en el código ni de migraciones viejas (recordatorio directo del incidente de `leads`, sección 5).
-- **Tipos de Supabase** (`src/types/`) son manuales, no autogenerados — si se agrega una columna o tabla, actualizarlos a mano o migrar a `supabase gen types typescript` como paso de build.
 - **Componentes de imagen (`next/image`) con `fill`** siempre necesitan `sizes` explícito — sin eso, Next no puede optimizar qué tamaño de imagen servir y lo señala como warning en consola.
-- **Antes de un deploy**, correr `pnpm typecheck && pnpm lint && pnpm build` localmente — el proyecto tiene TypeScript estricto y ESLint configurado, ambos deben pasar limpio.
+- **Antes de un deploy**, correr `pnpm typecheck && pnpm lint && pnpm build` localmente — el proyecto tiene TypeScript estricto y ESLint configurado, ambos deben pasar limpio. Además, `.github/workflows/ci.yml` corre lo mismo automáticamente en cada PR/push a `develop`/`main` (el job de build necesita `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`/`SUPABASE_SERVICE_ROLE_KEY` cargadas como Secrets del repo en GitHub — sin eso, ese job falla por falta de configuración, no por un error de código).
+- **Variables de entorno:** `src/env.ts` las valida con Zod al arrancar (importado desde `next.config.ts`, corre antes de cualquier build/dev). Si falta algo requerido, el proceso corta ahí mismo con un mensaje legible — no dependas de que un `process.env.X!` truene más adelante en un punto random del código. Si agregás una variable de entorno nueva al proyecto, agregala también al schema de `src/env.ts` (y a `.env.example`, y a la tabla de la guía de implementación).
+- **Tipos de Supabase:** `src/types/database.types.ts` es autogenerado (`pnpm db:types`, requiere Supabase CLI logueado) — no editarlo a mano, y regenerarlo cada vez que cambie el esquema (tabla, columna, enum nuevo). Los tres clientes de Supabase (`src/lib/supabase/{server,client,admin}.ts`) ya están tipados con `createClient<Database>`. Los tipos de dominio en `src/types/property.ts` (y similares, en camelCase, pensados para consumo directo de componentes) siguen siendo manuales — es una capa de traducción, no un duplicado a eliminar, pero si el esquema cambia hay que revisar si siguen reflejando la realidad.
 
 ---
 
