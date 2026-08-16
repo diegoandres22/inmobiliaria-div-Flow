@@ -7,11 +7,11 @@
   --font-heading: var(--font-space-grotesk);
 
   /* Color de marca — oficial, Manual de Identidad Visual <div>Flow v1.0 (jul-2026) */
-  --color-brand-accent: #5dcaa5;
-  --color-brand-accent-dark: #0f6e56;
-  --color-brand-ink: #2c2c2a;
-  --color-brand-paper: #ffffff;
-  --color-brand-neutral: #f1efe8;
+  --color-brand-accent: #5DCAA5;
+  --color-brand-accent-dark: #0F6E56;
+  --color-brand-ink: #2C2C2A;
+  --color-brand-paper: #FFFFFF;
+  --color-brand-neutral: #F1EFE8;
 
   /* Extensión funcional — no viene del manual, cubre estados de UI que la marca no define */
   --color-border: #e4e1d6;
