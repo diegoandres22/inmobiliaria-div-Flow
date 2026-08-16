@@ -109,10 +109,10 @@ export default async function AdminDashboardPage() {
             {recentLeads.map((lead) => (
               <div
                 key={lead.id}
-                className="flex items-center justify-between gap-3 p-3 text-sm"
+                className="flex flex-col gap-1 p-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3"
               >
-                <div>
-                  <p className="font-medium text-foreground">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-foreground">
                     {lead.name}
                     {lead.honeypot_flag && (
                       <span className="ml-2 text-xs text-destructive">
@@ -120,11 +120,11 @@ export default async function AdminDashboardPage() {
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="truncate text-xs text-muted-foreground">
                     {lead.email} · {lead.source}
                   </p>
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground sm:shrink-0">
                   {new Date(lead.created_at).toLocaleDateString("es")}
                 </span>
               </div>

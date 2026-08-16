@@ -83,9 +83,12 @@ export function Footer() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-brand-paper/50">
-              Se define en client.config.ts
-            </p>
+            // Antes mostraba el texto de debug "Se define en
+            // client.config.ts" a visitantes reales cuando coverageZones
+            // estaba vacío — placeholder de desarrollo que se filtró a
+            // producción. Con la lista vacía, mejor no mostrar nada que
+            // mostrar algo que parece roto.
+            <p className="text-sm text-brand-paper/50">Próximamente</p>
           )}
         </div>
 
