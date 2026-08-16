@@ -1,0 +1,63 @@
+name: CI
+
+# Corre en cada push/PR a develop y main — reemplaza el chequeo manual de
+# "corré pnpm typecheck/lint/build en tu terminal y pegame el resultado"
+# que se venía haciendo a mano en cada iteración.
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+jobs:
+  typecheck-and-lint:
+    name: Typecheck + Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+
+      - run: pnpm lint
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    # No bloquea el merge si typecheck/lint ya fallaron — igual corre en
+    # paralelo, pero el build necesita las env vars de abajo para arrancar
+    # (ver src/env.ts). Sin esos secrets cargados en el repo de GitHub
+    # (Settings → Secrets and variables → Actions), este job falla — no es
+    # un error de código, es un prerequisito de configuración (ver
+    # docs/DOCUMENTACION-IMPLEMENTACION.md sección 3.4).
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY }}
+          IP_HASH_SALT: ${{ secrets.IP_HASH_SALT }}
