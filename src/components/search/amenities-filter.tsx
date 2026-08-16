@@ -44,7 +44,7 @@ export function AmenitiesFilter({
           (q === "" || a.name.toLowerCase().includes(q)),
       ),
     }));
-  }, [query]);
+  }, [query, amenityCategories, amenities]);
 
   function toggle(id: string) {
     onChange(

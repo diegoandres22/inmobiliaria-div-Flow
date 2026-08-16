@@ -45,8 +45,14 @@ export function ShareProperty({
   const url = `${clientConfig.seo.siteUrl}/propiedades/${slug}`;
 
   // navigator.share solo existe en el cliente y solo en algunos navegadores
-  // (sobre todo móviles) — se detecta después del mount para no romper SSR.
+  // (sobre todo móviles) — se detecta después del mount para no romper SSR
+  // (el server siempre renderiza sin este botón). Es el patrón estándar de
+  // "distinto contenido en servidor vs. cliente" que documenta React
+  // (react.dev/reference/react/useEffect#displaying-different-content-on-the-server-and-the-client);
+  // react-hooks/set-state-in-effect lo marca como sospechoso igual — es un
+  // falso positivo conocido y todavía abierto (facebook/react#34743).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCanNativeShare(typeof navigator !== "undefined" && "share" in navigator);
   }, []);
 

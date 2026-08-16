@@ -51,9 +51,23 @@ export async function middleware(request: NextRequest) {
   // TODAVÍA no aal2 — si se la protege con la misma regla de abajo, nadie
   // podría nunca llegar a ingresar su código.
   const isMfaChallengeRoute = pathname === "/admin/mfa-challenge";
+  // "Olvidé mi contraseña" es público, como /admin/login — todavía no hay
+  // sesión en este punto del flujo.
+  const isForgotPasswordRoute = pathname === "/admin/olvide-password";
+  // "Elegir contraseña nueva" SÍ necesita sesión (la deja el intercambio de
+  // código en /admin/auth/callback), pero se exceptúa del gate de 2FA de
+  // abajo por la misma razón que /admin/mfa-challenge: si la cuenta tiene
+  // 2FA activado, esta pantalla igual deja fijar la contraseña, pero el
+  // PRÓXIMO request a cualquier otra ruta de /admin va a pedir el código
+  // igual — resetear la contraseña nunca alcanza sola para entrar al panel
+  // si hay un segundo factor de por medio, ninguno de los dos sustituye al otro.
+  const isResetPasswordRoute = pathname === "/admin/reset-password";
 
   const requiresSession =
-    isAdminRoute && !isLoginRoute && !isAuthCallbackRoute;
+    isAdminRoute &&
+    !isLoginRoute &&
+    !isAuthCallbackRoute &&
+    !isForgotPasswordRoute;
 
   if (requiresSession && !user) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
@@ -92,14 +106,29 @@ export async function middleware(request: NextRequest) {
     });
 
     // 2FA (TOTP) opcional por agente: si el agente activó un factor
-    // verificado, Supabase exige "aal2" para considerarlo autenticado del
-    // todo. currentLevel !== nextLevel === el usuario pasó la contraseña
-    // (aal1) pero todavía no el código de 6 dígitos — lo mandamos al
-    // challenge en vez de dejarlo entrar al panel.
-    if (!isMfaChallengeRoute) {
+    // verificado, Supabase debería exigir "aal2" para considerarlo
+    // autenticado del todo.
+    //
+    // OJO: no se usa `nextLevel` de getAuthenticatorAssuranceLevel() para
+    // decidir esto — es un bug conocido y viejo del SDK de Supabase
+    // (supabase/auth-js#589, discussión supabase/supabase#11383, todavía
+    // reportado en 2025 con versiones recientes) donde `nextLevel` se queda
+    // en "aal1" en sesiones nuevas aunque el usuario SÍ tenga un factor
+    // verificado — con ese campo, el challenge nunca se disparaba después
+    // de un login limpio. `currentLevel` (lo que la sesión actual probó
+    // realmente, viene firmado en el JWT) sí es confiable. Acá se compara
+    // contra "¿tiene algún factor verificado?" preguntado directo con
+    // listFactors() en vez de confiar en el cálculo interno del SDK.
+    if (!isMfaChallengeRoute && !isResetPasswordRoute) {
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aal && aal.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
-        return NextResponse.redirect(new URL("/admin/mfa-challenge", request.url));
+      if (aal && aal.currentLevel !== "aal2") {
+        const { data: factorsData } = await supabase.auth.mfa.listFactors();
+        const hasVerifiedFactor = (factorsData?.totp ?? []).some(
+          (f) => f.status === "verified",
+        );
+        if (hasVerifiedFactor) {
+          return NextResponse.redirect(new URL("/admin/mfa-challenge", request.url));
+        }
       }
     }
   }

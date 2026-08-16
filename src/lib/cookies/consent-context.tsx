@@ -58,7 +58,11 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
 
+  // Misma razón que CompareProvider: la cookie de consentimiento no se puede
+  // leer durante SSR, arranca en null y se corrige después del mount — falso
+  // positivo conocido de react-hooks/set-state-in-effect (facebook/react#34743).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setConsent(readConsentCookie());
     setHydrated(true);
   }, []);

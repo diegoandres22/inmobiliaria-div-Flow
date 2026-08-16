@@ -47,6 +47,7 @@ export function MfaChallengeForm() {
     }
 
     // Hard nav: fuerza a middleware.ts a re-evaluar con la sesión ya en aal2.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/admin/propiedades";
   }
 

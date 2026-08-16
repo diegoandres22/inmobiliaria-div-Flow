@@ -140,10 +140,16 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
 
   return (
     <>
+      {/* Auditoría 2026-08-15 (C2): JSON.stringify no escapa "<" — un título o
+          descripción con "</script><script>...</script>" rompía el tag y
+          ejecutaba JS arbitrario contra cualquier visitante público. Se
+          escapa "<" a su forma unicode (<), válida dentro de un string
+          JSON y sin efecto en cómo los buscadores leen el JSON-LD. */}
       <script
         type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       <Header />
       <main className="mx-auto max-w-6xl px-4 py-8 md:px-6">

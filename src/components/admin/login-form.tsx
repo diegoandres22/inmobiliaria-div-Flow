@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ const URL_ERROR_MESSAGES: Record<string, string> = {
 export function LoginForm() {
   const searchParams = useSearchParams();
   const oauthError = searchParams.get("error");
+  const justReset = searchParams.get("reset") === "1";
 
   const [error, setError] = useState<string | null>(null);
   const [loading, startTransition] = useTransition();
@@ -58,6 +60,15 @@ export function LoginForm() {
 
   return (
     <div className="space-y-4">
+      {justReset && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="rounded-[var(--radius)] border border-brand-accent bg-brand-neutral p-3 text-sm text-foreground"
+        >
+          Contraseña actualizada — iniciá sesión con la nueva.
+        </p>
+      )}
       <Button
         type="button"
         variant="outline"
@@ -104,6 +115,14 @@ export function LoginForm() {
             {displayedError}
           </p>
         )}
+        <div className="text-right">
+          <Link
+            href="/admin/olvide-password"
+            className="text-xs text-muted-foreground hover:text-brand-accent-dark"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Ingresando..." : "Ingresar"}
         </Button>

@@ -57,6 +57,22 @@ export function PropertyImageManager({
     });
   }
 
+  // Auditoría 2026-08-15 (B6): antes se llamaba a setCoverImage sin try/catch
+  // dentro de startTransition — con la nueva función atómica, un conflicto
+  // real (otra pestaña ya la cambió) o un problema de permiso ahora sí tira
+  // una excepción, y sin este catch quedaba como un rechazo de promesa sin
+  // manejar (ningún aviso al agente, la estrella simplemente "no hacía nada").
+  function handleSetCover(imageId: string) {
+    startTransition(async () => {
+      try {
+        await setCoverImage(propertyId, imageId);
+        toast.success("Portada actualizada.");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "No se pudo cambiar la portada.");
+      }
+    });
+  }
+
   function handleDeleteConfirm() {
     if (!deleteTarget) return;
     const imageId = deleteTarget;
@@ -97,9 +113,7 @@ export function PropertyImageManager({
                   <button
                     type="button"
                     disabled={isPending}
-                    onClick={() =>
-                      startTransition(() => setCoverImage(propertyId, img.id))
-                    }
+                    onClick={() => handleSetCover(img.id)}
                     aria-label="Marcar como portada"
                     className="flex size-8 items-center justify-center rounded-full bg-white text-brand-ink hover:scale-105"
                   >

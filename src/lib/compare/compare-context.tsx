@@ -32,9 +32,16 @@ export function CompareProvider({ children }: { children: ReactNode }) {
   const [ids, setIds] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
+  // Hidratación desde localStorage — no se puede leer durante SSR, así que
+  // arranca en [] (coincide con el render de servidor) y se corrige acá
+  // después del mount. Patrón estándar de React para "contenido distinto en
+  // servidor vs. cliente"; react-hooks/set-state-in-effect lo marca como
+  // sospechoso igual — falso positivo conocido y todavía abierto en el
+  // propio repo de React (facebook/react#34743).
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (raw) setIds(JSON.parse(raw));
     } catch {
       // localStorage puede fallar en modo privado — degradamos a "sin persistencia".

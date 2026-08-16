@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { X, Scale } from "lucide-react";
+import { Scale } from "lucide-react";
 import { useCompare } from "@/lib/compare/compare-context";
 import { Button } from "@/components/ui/button";
 

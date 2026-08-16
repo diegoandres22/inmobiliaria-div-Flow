@@ -5,7 +5,6 @@ import { ShieldCheck, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { createClient } from "@/lib/supabase/client";
 
 interface ActiveFactor {
@@ -30,7 +29,12 @@ export function MfaEnroll({ initialFactor }: { initialFactor: ActiveFactor | nul
   const [pendingFactorId, setPendingFactorId] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Desactivar 2FA pide el código vigente, no solo un "¿estás seguro?" — es
+  // una acción de seguridad sensible, re-autentica antes de bajar la guardia
+  // de la cuenta aunque la sesión ya esté aal2 desde el login.
+  const [disabling, setDisabling] = useState(false);
+  const [disableCode, setDisableCode] = useState("");
+  const [disableError, setDisableError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   async function handleStartEnroll() {
@@ -88,26 +92,86 @@ export function MfaEnroll({ initialFactor }: { initialFactor: ActiveFactor | nul
     });
   }
 
-  function handleDisableConfirm() {
-    if (!factor) return;
-    setConfirmOpen(false);
-    setError(null);
+  function handleDisableSubmit() {
+    if (!factor || disableCode.length !== 6) return;
+    setDisableError(null);
     startTransition(async () => {
       const supabase = createClient();
+      // challengeAndVerify primero: confirma que quien está en el teclado
+      // ahora mismo sigue teniendo la app de autenticación en mano, no solo
+      // una sesión de navegador que quedó abierta. Recién si el código es
+      // válido se pide el unenroll.
+      const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({
+        factorId: factor.id,
+        code: disableCode,
+      });
+      if (verifyError) {
+        setDisableError("Código incorrecto o vencido. Probá de nuevo.");
+        return;
+      }
+
       const { error: unenrollError } = await supabase.auth.mfa.unenroll({
         factorId: factor.id,
       });
       if (unenrollError) {
-        setError(unenrollError.message);
+        setDisableError(unenrollError.message);
         toast.error(unenrollError.message);
         return;
       }
       setFactor(null);
+      setDisabling(false);
+      setDisableCode("");
       toast.success("Verificación en dos pasos desactivada.");
     });
   }
 
   if (factor) {
+    if (disabling) {
+      return (
+        <div className="space-y-3 rounded-[var(--radius)] border border-destructive/40 bg-destructive/5 p-4">
+          <p className="text-sm text-foreground">
+            Para desactivar, confirmá con el código actual de tu app de autenticación:
+          </p>
+          <div className="flex items-end gap-2">
+            <Input
+              value={disableCode}
+              onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="000000"
+              inputMode="numeric"
+              maxLength={6}
+              autoFocus
+              className="max-w-40"
+            />
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={disableCode.length !== 6 || isPending}
+              onClick={handleDisableSubmit}
+            >
+              {isPending ? "Verificando..." : "Desactivar"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={isPending}
+              onClick={() => {
+                setDisabling(false);
+                setDisableCode("");
+                setDisableError(null);
+              }}
+            >
+              Cancelar
+            </Button>
+          </div>
+          {disableError && (
+            <p role="alert" aria-live="assertive" className="text-sm text-destructive">
+              {disableError}
+            </p>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="flex items-center justify-between gap-4 rounded-[var(--radius)] border border-brand-accent/40 bg-brand-neutral p-4">
         <p className="flex items-center gap-2 text-sm text-foreground">
@@ -120,18 +184,10 @@ export function MfaEnroll({ initialFactor }: { initialFactor: ActiveFactor | nul
           size="sm"
           className="text-destructive"
           disabled={isPending}
-          onClick={() => setConfirmOpen(true)}
+          onClick={() => setDisabling(true)}
         >
           Desactivar
         </Button>
-        <ConfirmDialog
-          open={confirmOpen}
-          onOpenChange={setConfirmOpen}
-          title="¿Desactivar la verificación en dos pasos?"
-          description="Tu cuenta quedará protegida solo con contraseña."
-          confirmLabel="Desactivar"
-          onConfirm={handleDisableConfirm}
-        />
       </div>
     );
   }

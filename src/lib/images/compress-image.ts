@@ -2,15 +2,21 @@
 // (Canvas API, sin librerías nuevas). No reemplaza la validación real de
 // tipo MIME server-side (ver src/lib/security/validate-image.ts, que lee
 // magic bytes): esto es optimización de peso, no seguridad.
-const MAX_DIMENSION = 2000; // lado más largo, en px
+const MAX_DIMENSION = 2000; // lado más largo, en px — default para fotos de propiedades
 const JPEG_QUALITY = 0.82;
 
-export async function compressImage(file: File): Promise<File> {
+// maxDimension configurable: avatar-upload.tsx pide un tamaño mucho más
+// chico (512px, una foto de perfil circular nunca necesita 2000px de lado)
+// sin duplicar esta función.
+export async function compressImage(
+  file: File,
+  maxDimension: number = MAX_DIMENSION,
+): Promise<File> {
   if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
 
   try {
     const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
     const width = Math.round(bitmap.width * scale);
     const height = Math.round(bitmap.height * scale);
 

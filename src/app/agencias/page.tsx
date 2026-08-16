@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Mail, Phone } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -59,9 +60,21 @@ export default async function AgenciesPage() {
                         key={agent.id}
                         className="flex items-start gap-3 rounded-[var(--radius)] border border-border bg-background p-4"
                       >
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-neutral font-heading text-sm text-brand-ink">
-                          {initials(agent.name)}
-                        </div>
+                        {agent.photoPath ? (
+                          <div className="relative size-11 shrink-0 overflow-hidden rounded-full bg-brand-neutral">
+                            <Image
+                              src={agent.photoPath}
+                              alt={agent.name}
+                              fill
+                              sizes="44px"
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-neutral font-heading text-sm text-brand-ink">
+                            {initials(agent.name)}
+                          </div>
+                        )}
                         <div className="min-w-0 space-y-1">
                           <p className="text-sm font-medium text-foreground">
                             {agent.name}

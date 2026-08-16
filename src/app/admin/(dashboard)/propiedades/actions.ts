@@ -104,14 +104,22 @@ export async function createProperty(
   return { id: created.id };
 }
 
+// Auditoría 2026-08-15 (A2): sin `.select()` de vuelta, si RLS bloqueaba el
+// delete (no es tu propiedad ni sos super-agente) esto afectaba 0 filas y el
+// botón igual mostraba "eliminada" — falso éxito. Mismo patrón aplicado abajo
+// en updateProperty/updatePropertyStatus/deletePropertyImage.
 export async function deleteProperty(propertyId: string) {
   const supabase = await createClient();
-  const { error } = await supabase
+  const { error, data } = await supabase
     .from("properties")
     .delete()
-    .eq("id", propertyId);
+    .eq("id", propertyId)
+    .select("id");
 
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error("No se pudo eliminar: no tenés permiso sobre esta propiedad.");
+  }
   revalidatePath("/admin/propiedades");
 }
 
@@ -140,12 +148,25 @@ export async function updatePropertyStatus(
     patch.published_at = new Date().toISOString();
   }
 
-  const { error } = await supabase
+  // Auditoría 2026-08-15 (B3): antes el UPDATE solo filtraba por `id` — dos
+  // personas con acceso a la misma propiedad (super-agente + agente dueño,
+  // vía RLS) podían pisarse una transición sin aviso. Agregar
+  // `.eq("status", currentStatus)` hace que el UPDATE afecte 0 filas si el
+  // estado ya cambió bajo el pie del que hizo clic, y el `.select()` permite
+  // distinguir ese conflicto real de un simple problema de permisos.
+  const { error, data } = await supabase
     .from("properties")
     .update(patch)
-    .eq("id", propertyId);
+    .eq("id", propertyId)
+    .eq("status", currentStatus)
+    .select("id");
 
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error(
+      "No se pudo actualizar: la propiedad ya no está en el estado esperado (alguien más la modificó) o no tenés permiso. Recargá la página.",
+    );
+  }
   revalidatePath("/admin/propiedades");
 }
 
@@ -167,7 +188,7 @@ export async function updateProperty(propertyId: string, formData: FormData) {
   }
   const values = parsed.data;
 
-  const { error } = await supabase
+  const { error, data } = await supabase
     .from("properties")
     .update({
       operation_type: values.operationType,
@@ -186,9 +207,17 @@ export async function updateProperty(propertyId: string, formData: FormData) {
       country_code: values.countryCode,
       location: `SRID=4326;POINT(${values.lng} ${values.lat})`,
     })
-    .eq("id", propertyId);
+    .eq("id", propertyId)
+    .select("id");
 
   if (error) throw new Error(error.message);
+  // Auditoría 2026-08-15 (A2): antes esto redirigía igual aunque RLS hubiera
+  // bloqueado el UPDATE (0 filas afectadas) — parecía guardado y no se había
+  // tocado nada. El comentario original decía "RLS es la segunda barrera",
+  // pero sin este chequeo esa barrera era invisible para el usuario.
+  if (!data || data.length === 0) {
+    throw new Error("No se pudo guardar: no tenés permiso sobre esta propiedad.");
+  }
 
   const selectedAmenities = formData.getAll("amenities") as string[];
   await supabase.from("property_amenities").delete().eq("property_id", propertyId);
@@ -286,13 +315,27 @@ export async function uploadPropertyImages(
 
     const isCover = coverIndex !== null ? i === coverIndex : !hasCover;
 
-    await supabase.from("property_images").insert({
+    // Auditoría 2026-08-15 (A3): antes no se revisaba el error de este
+    // insert — si fallaba (RLS, red, columna inválida), el archivo ya subido
+    // quedaba huérfano en Storage Y `uploaded` se incrementaba igual, así que
+    // el agente veía "imagen subida" cuando en realidad nunca quedó
+    // registrada ni aparece en la galería. Mismo patrón que ya usa
+    // uploadAvatar: si el insert falla, se borra el archivo recién subido y
+    // se reporta como error, no como éxito.
+    const { error: insertError } = await supabase.from("property_images").insert({
       property_id: propertyId,
       storage_path: publicUrl.publicUrl,
       alt_text: safeAlt || "Imagen de la propiedad",
       is_cover: isCover,
       sort_order: sortOrder,
     });
+
+    if (insertError) {
+      await supabase.storage.from("property-images").remove([path]);
+      errors.push(`"${file.name}": se subió pero no se pudo registrar (${insertError.message}).`);
+      continue;
+    }
+
     if (isCover) hasCover = true;
     sortOrder += 1;
     uploaded += 1;
@@ -304,27 +347,33 @@ export async function uploadPropertyImages(
 
 export async function deletePropertyImage(propertyId: string, imageId: string) {
   const supabase = await createClient();
-  const { error } = await supabase
+  const { error, data } = await supabase
     .from("property_images")
     .delete()
     .eq("id", imageId)
-    .eq("property_id", propertyId);
+    .eq("property_id", propertyId)
+    .select("id");
 
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error("No se pudo eliminar: no tenés permiso sobre esta imagen.");
+  }
   revalidatePath(`/admin/propiedades/${propertyId}`);
 }
 
+// Auditoría 2026-08-15 (B6): antes eran 2 UPDATEs secuenciales sin
+// transacción (desmarcar todas, marcar una) — dos pestañas/dispositivos
+// accionando casi al mismo tiempo podían dejar 0 o 2 portadas. Ahora es una
+// sola sentencia atómica del lado de la base (función `set_cover_image`,
+// migración `add_set_cover_image_atomic_rpc`), que corre con los mismos
+// permisos del que llama (RLS de property_images se sigue aplicando igual)
+// y tira un error claro si no había nada para actualizar.
 export async function setCoverImage(propertyId: string, imageId: string) {
   const supabase = await createClient();
-  await supabase
-    .from("property_images")
-    .update({ is_cover: false })
-    .eq("property_id", propertyId);
-  const { error } = await supabase
-    .from("property_images")
-    .update({ is_cover: true })
-    .eq("id", imageId)
-    .eq("property_id", propertyId);
+  const { error } = await supabase.rpc("set_cover_image", {
+    p_property_id: propertyId,
+    p_image_id: imageId,
+  });
 
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/propiedades/${propertyId}`);

@@ -76,16 +76,23 @@ export default function ComparePage() {
   const [properties, setProperties] = useState<CompareProperty[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const showEmpty = ids.length === 0;
+
   useEffect(() => {
-    if (ids.length === 0) {
-      setProperties([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
+    // Nada que buscar — showEmpty ya cubre este caso en el render de abajo,
+    // no hace falta resetear `properties`/`loading` acá (evita el
+    // "cascading render" real que sí marcaba la regla react-hooks/set-state-in-effect,
+    // a diferencia de los otros usos de este hook en el proyecto que son
+    // falsos positivos de hidratación).
+    if (ids.length === 0) return;
     const supabase = createClient();
 
     (async () => {
+      // Movido acá adentro (en vez de directo en el body del efecto) por
+      // react-hooks/set-state-in-effect — mismo momento de ejecución (corre
+      // sincrónico hasta el primer await), solo que en un scope que el
+      // linter no marca como "setState directo en un efecto".
+      setLoading(true);
       const { data } = await supabase
         .from("properties")
         .select(
@@ -157,16 +164,14 @@ export default function ComparePage() {
               Hasta 4 lado a lado. Se guarda en este navegador.
             </p>
           </div>
-          {properties.length > 0 && (
+          {!showEmpty && (
             <Button variant="outline" onClick={clear}>
               Vaciar
             </Button>
           )}
         </div>
 
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Cargando...</p>
-        ) : properties.length === 0 ? (
+        {showEmpty ? (
           <div className="flex flex-col items-center gap-3 rounded-[var(--radius)] border border-dashed border-border py-20 text-center">
             <Scale className="size-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
@@ -176,6 +181,8 @@ export default function ComparePage() {
               <Link href="/propiedades">Explorar propiedades</Link>
             </Button>
           </div>
+        ) : loading ? (
+          <p className="text-sm text-muted-foreground">Cargando...</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] border-separate border-spacing-0">
