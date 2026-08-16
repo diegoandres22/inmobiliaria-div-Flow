@@ -195,7 +195,10 @@ export const clientConfig: ClientConfig = {
   },
 
   seo: {
-    siteUrl: "https://example.com", // TODO(cliente): dominio real de producción
+    // Sin dominio propio todavía — URL real de Vercel. Cuando compres un
+    // dominio, actualizar acá y agregarlo también como Redirect URL en
+    // Supabase Auth (Google OAuth + reset de contraseña dependen de eso).
+    siteUrl: "https://divflow-realty.vercel.app",
     defaultLocale: "es",
   },
 };
