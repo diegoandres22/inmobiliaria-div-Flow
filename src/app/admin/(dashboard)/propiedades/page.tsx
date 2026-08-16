@@ -36,7 +36,7 @@ export default async function AdminPropertiesPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-heading text-xl text-foreground">
           {agent?.isSuperAgent ? "Todas las propiedades" : "Mis propiedades"}
         </h1>
@@ -72,13 +72,13 @@ export default async function AdminPropertiesPage() {
             return (
               <div
                 key={p.id}
-                className="flex items-center justify-between gap-4 p-4"
+                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div>
-                  <p className="text-sm font-medium text-foreground">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">
                     {p.title}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="truncate text-xs text-muted-foreground">
                     {p.city} ·{" "}
                     {new Intl.NumberFormat("es", {
                       style: "currency",
@@ -88,7 +88,11 @@ export default async function AdminPropertiesPage() {
                     {agent?.isSuperAgent && ownerName && ` · ${ownerName}`}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                {/* flex-wrap: antes esto era una sola fila sin wrap — badge +
+                    hasta 3 botones de estado + editar + borrar no entraban
+                    nunca en un viewport mobile y desbordaban. Ahora pasan a
+                    una segunda línea en vez de romper el layout. */}
+                <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:gap-3">
                   <Badge
                     variant={p.status === "publicada" ? "default" : "secondary"}
                   >

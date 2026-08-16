@@ -101,7 +101,7 @@ export default async function EditPropertyPage({
           className="flex w-full rounded-[var(--radius)] border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground">Operación</label>
             <select
@@ -134,7 +134,7 @@ export default async function EditPropertyPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input
             name="priceAmount"
             type="number"
@@ -152,7 +152,7 @@ export default async function EditPropertyPage({
           </select>
         </div>
 
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Input name="bedrooms" type="number" placeholder="Habitaciones" defaultValue={property.bedrooms} />
           <Input name="bathrooms" type="number" step="0.5" placeholder="Baños" defaultValue={property.bathrooms} />
           <Input name="parkingSpots" type="number" placeholder="Estac." defaultValue={property.parking_spots} />
@@ -160,13 +160,13 @@ export default async function EditPropertyPage({
         </div>
 
         <Input name="addressLine" placeholder="Dirección" defaultValue={property.address_line} required />
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Input name="city" placeholder="Ciudad" defaultValue={property.city} required />
           <Input name="stateRegion" placeholder="Estado/Región" defaultValue={property.state_region} required />
           <Input name="countryCode" placeholder="País (MX, CO...)" maxLength={2} defaultValue={property.country_code} required />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input
             name="lat"
             type="number"

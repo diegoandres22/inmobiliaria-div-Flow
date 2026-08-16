@@ -26,6 +26,7 @@ export function Logo({ variant = "positivo", className }: LogoProps) {
           src={src}
           alt="<div>Flow"
           fill
+          sizes="40px"
           className="object-contain"
           priority
         />

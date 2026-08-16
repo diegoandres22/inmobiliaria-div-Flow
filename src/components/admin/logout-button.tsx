@@ -26,9 +26,19 @@ export function LogoutButton() {
   }
 
   return (
-    <Button variant="ghost" size="sm" onClick={handleLogout} disabled={loading}>
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleLogout}
+      disabled={loading}
+      // Sin texto visible en mobile el botón queda solo con el ícono —
+      // aria-label asegura que lectores de pantalla lo sigan anunciando bien.
+      aria-label={loading ? "Saliendo..." : "Cerrar sesión"}
+    >
       <LogOut className="size-4" />
-      {loading ? "Saliendo..." : "Cerrar sesión"}
+      <span className="hidden sm:inline">
+        {loading ? "Saliendo..." : "Cerrar sesión"}
+      </span>
     </Button>
   );
 }

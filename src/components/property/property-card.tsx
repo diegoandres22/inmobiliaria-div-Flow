@@ -24,9 +24,13 @@ function formatPrice(property: PropertyListItem) {
 export function PropertyCard({
   property,
   isFavorite = false,
+  priority = false,
 }: {
   property: PropertyListItem;
   isFavorite?: boolean;
+  // Solo la primera card del grid "destacadas" (candidata a LCP) debe
+  // cargar eager/alta prioridad — el resto sigue lazy por defecto.
+  priority?: boolean;
 }) {
   return (
     <Link
@@ -41,6 +45,7 @@ export function PropertyCard({
             fill
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+            priority={priority}
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

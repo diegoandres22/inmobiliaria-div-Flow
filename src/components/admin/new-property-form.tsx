@@ -153,7 +153,7 @@ export function NewPropertyForm({ categories, amenities }: NewPropertyFormProps)
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground">Operación</label>
             <select name="operationType" required defaultValue="venta" className={SELECT_CLASS}>
@@ -182,7 +182,7 @@ export function NewPropertyForm({ categories, amenities }: NewPropertyFormProps)
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Input
               name="priceAmount"
@@ -232,7 +232,7 @@ export function NewPropertyForm({ categories, amenities }: NewPropertyFormProps)
             <p className="text-xs text-destructive">{fieldErrors.addressLine}</p>
           )}
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Input
               name="city"

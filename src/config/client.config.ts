@@ -132,8 +132,8 @@ export interface ClientConfig {
 
 export const clientConfig: ClientConfig = {
   brand: {
-    name: "Proyecto Inmobiliario Demo",
-    legalName: "Proyecto Inmobiliario Demo S.A.",
+    name: "Inmobiliaria DivFlow",
+    legalName: "Inmobiliaria DivFlow", // TODO(cliente): razón social si es distinta al nombre de marca
     tagline: "Encuentra tu próxima propiedad — venta y alquiler.",
     logo: {
       primary: "/logo-positivo.svg", // TODO(cliente): no existe el archivo todavía, ver src/components/layout/logo.tsx
@@ -155,8 +155,12 @@ export const clientConfig: ClientConfig = {
 
   contact: {
     phone: "+00 000 000 0000", // TODO(cliente)
+    // Deshabilitado a propósito por ahora — con null, WhatsAppCTA y el link
+    // del footer no se renderizan (ver footer.tsx/whatsapp-cta.tsx), pero el
+    // componente queda intacto: alcanza con poner el número acá para
+    // reactivarlo, sin tocar código.
     whatsapp: null, // TODO(cliente): "521234567890" — sin "+"
-    email: "contacto@example.com", // TODO(cliente)
+    email: "diegoandresv22@gmail.com",
     address: "Dirección pendiente de definir", // TODO(cliente)
     social: {
       instagram: null, // TODO(cliente)
