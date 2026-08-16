@@ -41,7 +41,11 @@ export function GeneralLeadForm() {
 
   if (status === "sent") {
     return (
-      <p className="rounded-[var(--radius)] border border-brand-accent bg-brand-neutral p-6 text-sm text-foreground">
+      <p
+        role="status"
+        aria-live="polite"
+        className="rounded-[var(--radius)] border border-brand-accent bg-brand-neutral p-6 text-sm text-foreground"
+      >
         Gracias — recibimos tu mensaje y te vamos a contactar pronto.
       </p>
     );
@@ -76,7 +80,7 @@ export function GeneralLeadForm() {
         {status === "sending" ? "Enviando..." : "Enviar mensaje"}
       </Button>
       {status === "error" && (
-        <p className="text-xs text-destructive">
+        <p role="alert" aria-live="assertive" className="text-xs text-destructive">
           Algo salió mal. Probá de nuevo en unos segundos.
         </p>
       )}

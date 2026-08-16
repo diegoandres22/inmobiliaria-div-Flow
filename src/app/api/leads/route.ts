@@ -3,12 +3,17 @@ import { headers } from "next/headers";
 import { leadSchema } from "@/lib/validation/lead-schema";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { hashIp } from "@/lib/security/hash-ip";
+import { isSameOrigin } from "@/lib/security/same-origin";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Rechaza envíos más rápidos de lo humanamente posible para completar el form.
 const MIN_FILL_TIME_MS = 1500;
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: "Origen inválido" }, { status: 403 });
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = leadSchema.safeParse(body);
 

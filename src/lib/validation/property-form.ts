@@ -18,9 +18,12 @@ export const propertyFormSchema = z.object({
     .enum(["unico", "mensual", ""])
     .optional()
     .transform((v) => (v ? v : undefined)),
-  bedrooms: z.coerce.number().int().nonnegative(),
-  bathrooms: z.coerce.number().nonnegative(),
-  parkingSpots: z.coerce.number().int().nonnegative(),
+  // Opcionales desde el formulario de creación: la sección "Características
+  // opcionales" solo agrega estos inputs al DOM si el agente la activa — si
+  // no, no llegan en el FormData y el default cubre el NOT NULL de la columna.
+  bedrooms: z.coerce.number().int().nonnegative().optional().default(0),
+  bathrooms: z.coerce.number().nonnegative().optional().default(0),
+  parkingSpots: z.coerce.number().int().nonnegative().optional().default(0),
   areaBuiltM2: z.coerce.number().positive(),
   addressLine: z.string().min(5).max(200),
   city: z.string().min(2).max(100),

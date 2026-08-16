@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { updateAgent, deleteAgent } from "@/app/admin/(dashboard)/agentes/actions";
 
 interface AgentRowProps {
@@ -25,6 +27,7 @@ export function AgentRow({ agent, agencies, agencyName, isSelf }: AgentRowProps)
   const [editing, setEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -34,8 +37,24 @@ export function AgentRow({ agent, agencies, agencyName, isSelf }: AgentRowProps)
       try {
         await updateAgent(agent.id, formData);
         setEditing(false);
+        toast.success("Agente actualizado.");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error desconocido");
+      }
+    });
+  }
+
+  function handleDeleteConfirm() {
+    setConfirmOpen(false);
+    setError(null);
+    startTransition(async () => {
+      try {
+        await deleteAgent(agent.id);
+        toast.success(`${agent.name} fue eliminado.`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Error desconocido";
+        setError(message);
+        toast.error(message);
       }
     });
   }
@@ -93,25 +112,37 @@ export function AgentRow({ agent, agencies, agencyName, isSelf }: AgentRowProps)
           {agent.email} · {agencyName}
         </p>
       </div>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-          Editar
-        </Button>
-        {!isSelf && (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={isPending}
-            className="text-destructive"
-            onClick={() => {
-              if (!confirm(`¿Eliminar a ${agent.name}? No se puede deshacer.`)) return;
-              startTransition(() => deleteAgent(agent.id));
-            }}
-          >
-            Eliminar
+      <div className="flex flex-col items-end gap-1">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+            Editar
           </Button>
+          {!isSelf && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isPending}
+              className="text-destructive"
+              onClick={() => setConfirmOpen(true)}
+            >
+              Eliminar
+            </Button>
+          )}
+        </div>
+        {error && (
+          <p role="alert" aria-live="assertive" className="text-xs text-destructive">
+            {error}
+          </p>
         )}
       </div>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`¿Eliminar a ${agent.name}?`}
+        description="Si tiene propiedades cargadas, se transfieren a tu cuenta. No se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }

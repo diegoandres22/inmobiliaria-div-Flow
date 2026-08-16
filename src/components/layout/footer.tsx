@@ -3,6 +3,7 @@ import type { SVGProps, ReactNode } from "react";
 import { Mail, MessageCircle } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { InstagramIcon, FacebookIcon, TiktokIcon } from "@/components/icons/social";
+import { CookiePreferencesTrigger } from "@/components/cookies/cookie-preferences-trigger";
 import { clientConfig } from "@/config/client.config";
 
 // Fuente de verdad: src/config/client.config.ts. Regla dura: nunca un link
@@ -115,9 +116,20 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-brand-paper/10 px-4 py-4 text-center text-xs text-brand-paper/50 md:px-6">
-        © {new Date().getFullYear()} {clientConfig.legal.companyName}.{" "}
-        {clientConfig.legal.footerDisclaimer}
+      <div className="flex flex-col items-center gap-2 border-t border-brand-paper/10 px-4 py-4 text-center text-xs text-brand-paper/50 md:flex-row md:justify-between md:px-6">
+        <p>
+          © {new Date().getFullYear()} {clientConfig.legal.companyName}.{" "}
+          {clientConfig.legal.footerDisclaimer}
+        </p>
+        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <Link href="/legal/privacidad" className="hover:text-brand-accent">
+            Política de Privacidad
+          </Link>
+          <Link href="/legal/cookies" className="hover:text-brand-accent">
+            Política de Cookies
+          </Link>
+          <CookiePreferencesTrigger />
+        </nav>
       </div>
     </footer>
   );

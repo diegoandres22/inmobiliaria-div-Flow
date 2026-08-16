@@ -118,7 +118,7 @@ export interface ClientConfig {
      * Nombres de las variables de entorno esperadas — los VALORES reales
      * van en .env.local, nunca en este archivo. Ver .env.example.
      */
-    mapTilerKeyEnvVar: "NEXT_PUBLIC_MAPTILER_KEY";
+    googleMapsEmbedKeyEnvVar: "NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY";
     analyticsIdEnvVar: "NEXT_PUBLIC_ANALYTICS_ID";
     whatsappBusinessEnvVar: "NEXT_PUBLIC_WHATSAPP_BUSINESS_ID";
   };
@@ -189,13 +189,16 @@ export const clientConfig: ClientConfig = {
   },
 
   integrations: {
-    mapTilerKeyEnvVar: "NEXT_PUBLIC_MAPTILER_KEY",
+    googleMapsEmbedKeyEnvVar: "NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY",
     analyticsIdEnvVar: "NEXT_PUBLIC_ANALYTICS_ID",
     whatsappBusinessEnvVar: "NEXT_PUBLIC_WHATSAPP_BUSINESS_ID",
   },
 
   seo: {
-    siteUrl: "https://example.com", // TODO(cliente): dominio real de producción
+    // Sin dominio propio todavía — URL real de Vercel. Cuando compres un
+    // dominio, actualizar acá y agregarlo también como Redirect URL en
+    // Supabase Auth (Google OAuth + reset de contraseña dependen de eso).
+    siteUrl: "https://divflow-realty.vercel.app",
     defaultLocale: "es",
   },
 };

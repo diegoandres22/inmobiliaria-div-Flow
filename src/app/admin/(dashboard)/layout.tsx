@@ -1,9 +1,19 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/layout/logo";
 import { LogoutButton } from "@/components/admin/logout-button";
 import { getCurrentAgent } from "@/lib/queries/get-current-agent";
+
+function agentInitials(name: string) {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+}
 
 // Antes esto asumía que middleware.ts ya había cortado el paso sin sesión y
 // solo resolvía el agente para el shell visual. Pero el layout SIEMPRE debe
@@ -50,9 +60,43 @@ export default async function AdminDashboardLayout({
                   Agentes
                 </Link>
               )}
+              {agent?.isSuperAgent && (
+                <Link href="/admin/auditoria" className="hover:text-brand-accent-dark">
+                  Auditoría
+                </Link>
+              )}
+              <Link href="/admin/mi-cuenta" className="hover:text-brand-accent-dark">
+                Mi cuenta
+              </Link>
             </nav>
           </div>
-          <LogoutButton />
+          <div className="flex shrink-0 items-center gap-3">
+            {/* Confirmación visual de que la foto subida en "Mi cuenta"
+                efectivamente se aplicó — sin esto, un agente podía subir una
+                foto y nunca verla reflejada en ningún lado del panel. */}
+            <Link
+              href="/admin/mi-cuenta"
+              aria-label="Mi cuenta"
+              className="block size-8 shrink-0 overflow-hidden rounded-full border border-border"
+            >
+              {agent.photoUrl ? (
+                <div className="relative size-full">
+                  <Image
+                    src={agent.photoUrl}
+                    alt=""
+                    fill
+                    sizes="32px"
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="flex size-full items-center justify-center bg-brand-neutral font-heading text-xs text-brand-ink">
+                  {agentInitials(agent.name)}
+                </div>
+              )}
+            </Link>
+            <LogoutButton />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>

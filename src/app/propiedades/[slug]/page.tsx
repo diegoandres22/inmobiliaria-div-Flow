@@ -11,6 +11,7 @@ import { PropertyContactCard } from "@/components/property/property-contact-card
 import { PropertyLeadForm } from "@/components/property/property-lead-form";
 import { FavoriteButton } from "@/components/property/favorite-button";
 import { CompareButton } from "@/components/property/compare-button";
+import { ShareProperty } from "@/components/property/share-property";
 import { createClient } from "@/lib/supabase/server";
 import { getFavoriteIds } from "@/lib/queries/get-favorite-ids";
 import { clientConfig } from "@/config/client.config";
@@ -48,16 +49,45 @@ export async function generateMetadata({
   const property = await getProperty(slug);
   if (!property) return {};
 
-  const title = `${property.title} — ${property.city}`;
+  const priceLabel = formatPrice(property);
+  const specsLabel = [
+    property.bedrooms > 0 ? `${property.bedrooms} hab` : null,
+    `${property.bathrooms} baños`,
+    `${property.areaBuiltM2} m²`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const locationLabel = `${property.city}, ${property.stateRegion}`;
+  const url = `${clientConfig.seo.siteUrl}/propiedades/${property.slug}`;
+  const coverImage = property.images[0];
+
+  // El <title>/<meta description> del buscador usan la descripción real del
+  // listado (SEO). La vista previa social (og:description) antepone precio +
+  // ubicación + specs — es lo que decide un click en WhatsApp/Twitter/etc.,
+  // no las primeras 155 palabras de la descripción libre del agente.
+  const title = `${property.title} — ${priceLabel}`;
   const description = property.description.slice(0, 155);
+  const ogDescription = `${priceLabel} · ${locationLabel} · ${specsLabel}`;
 
   return {
     title,
     description,
+    alternates: { canonical: url },
     openGraph: {
-      title,
-      description,
-      images: property.images[0] ? [property.images[0].url] : [],
+      title: property.title,
+      description: ogDescription,
+      url,
+      siteName: clientConfig.brand.name,
+      type: "website",
+      images: coverImage
+        ? [{ url: coverImage.url, alt: coverImage.alt || property.title }]
+        : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: property.title,
+      description: ogDescription,
+      images: coverImage ? [coverImage.url] : [],
     },
   };
 }
@@ -110,10 +140,16 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
 
   return (
     <>
+      {/* Auditoría 2026-08-15 (C2): JSON.stringify no escapa "<" — un título o
+          descripción con "</script><script>...</script>" rompía el tag y
+          ejecutaba JS arbitrario contra cualquier visitante público. Se
+          escapa "<" a su forma unicode (<), válida dentro de un string
+          JSON y sin efecto en cómo los buscadores leen el JSON-LD. */}
       <script
         type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       <Header />
       <main className="mx-auto max-w-6xl px-4 py-8 md:px-6">
@@ -135,6 +171,17 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
                   <CompareButton
                     propertyId={property.id}
                     className="border border-border"
+                  />
+                  <ShareProperty
+                    slug={property.slug}
+                    title={property.title}
+                    priceLabel={formatPrice(property)}
+                    city={property.city}
+                    stateRegion={property.stateRegion}
+                    bedrooms={property.bedrooms}
+                    bathrooms={property.bathrooms}
+                    areaBuiltM2={property.areaBuiltM2}
+                    className="[&>*]:border [&>*]:border-border"
                   />
                 </div>
               </div>

@@ -6,6 +6,7 @@ export interface CurrentAgent {
   email: string;
   agencyId: string;
   isSuperAgent: boolean;
+  photoUrl: string | null;
 }
 
 // Única puerta de entrada para "¿quién es el agente logueado y qué puede
@@ -20,7 +21,7 @@ export async function getCurrentAgent(): Promise<CurrentAgent | null> {
 
   const { data: agent } = await supabase
     .from("agents")
-    .select("id, name, email, agency_id, is_super_agent")
+    .select("id, name, email, agency_id, is_super_agent, photo_path")
     .eq("auth_user_id", user.id)
     .single();
 
@@ -32,5 +33,6 @@ export async function getCurrentAgent(): Promise<CurrentAgent | null> {
     email: agent.email,
     agencyId: agent.agency_id,
     isSuperAgent: agent.is_super_agent,
+    photoUrl: agent.photo_path,
   };
 }

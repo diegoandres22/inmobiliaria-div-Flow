@@ -3,6 +3,10 @@ import type { ReactNode } from "react";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { CompareProvider } from "@/lib/compare/compare-context";
 import { CompareBar } from "@/components/compare/compare-bar";
+import { ConsentProvider } from "@/lib/cookies/consent-context";
+import { CookieConsentBanner } from "@/components/cookies/cookie-consent-banner";
+import { AnalyticsScripts } from "@/components/cookies/analytics-scripts";
+import { Toaster } from "@/components/ui/sonner";
 import { clientConfig } from "@/config/client.config";
 import "./globals.css";
 
@@ -33,10 +37,15 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body>
-        <CompareProvider>
-          {children}
-          <CompareBar />
-        </CompareProvider>
+        <ConsentProvider>
+          <CompareProvider>
+            {children}
+            <CompareBar />
+          </CompareProvider>
+          <CookieConsentBanner />
+          <AnalyticsScripts />
+          <Toaster />
+        </ConsentProvider>
       </body>
     </html>
   );

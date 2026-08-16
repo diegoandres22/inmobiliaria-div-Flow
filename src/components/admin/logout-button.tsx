@@ -21,6 +21,7 @@ export function LogoutButton() {
     // Navegación dura (no router.push) a propósito: fuerza al navegador a
     // pedirle todo de cero al servidor, sin depender del router cache de
     // Next para una ruta que antes ya visitó como autenticado.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/admin/login";
   }
 
