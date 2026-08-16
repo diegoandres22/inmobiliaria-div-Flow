@@ -9,18 +9,16 @@
  *
  * Cómo reutilizar esta base para un cliente nuevo:
  *   1. Cloná el repo / usalo como template.
- *   2. Editá los valores de `clientConfig` más abajo (marca, contacto, copys,
- *      legales). Los colores deben salir de la paleta ya definida en
- *      src/app/globals.css (@theme) — si el cliente tiene otra paleta, se
- *      cambia PRIMERO ahí (son los tokens reales que usan los componentes) y
- *      DESPUÉS se refleja el hex acá, para que este archivo documente lo que
- *      hay, no lo reemplace.
+ *   2. Editá los valores de `clientConfig` más abajo (marca, colores, contacto,
+ *      copys, legales) — es el único archivo que hace falta tocar. Los
+ *      colores se sincronizan solos hacia Tailwind (src/app/globals.css) al
+ *      correr `pnpm dev`/`pnpm build`, ver scripts/sync-theme.mjs.
  *   3. Los secretos (API keys, tokens) NUNCA van acá — van en variables de
  *      entorno (.env.local). Este archivo solo referencia el NOMBRE de la
  *      variable esperada, no el valor.
  *   4. Provisioná un proyecto Supabase propio para el cliente (ver
- *      ARCHITECTURE.md) y corré las migraciones — este archivo no reemplaza
- *      esa capa, solo la identidad/contenido de marca.
+ *      docs/DOCUMENTACION-IMPLEMENTACION.md) y corré las migraciones — este
+ *      archivo no reemplaza esa capa, solo la identidad/contenido de marca.
  *
  * Campos en null o con TODO(cliente) son los que el cliente nuevo tiene que
  * completar sí o sí antes de salir a producción.
@@ -42,9 +40,11 @@ export interface ClientConfig {
     };
     favicon: string;
     /**
-     * Deben coincidir con los tokens --color-brand-* de src/app/globals.css.
-     * Cambiar acá SIN cambiar globals.css no tiene efecto visual — son solo
-     * documentación de lo que ya está aplicado.
+     * Fuente de verdad real de la paleta — scripts/sync-theme.mjs lee estos
+     * valores y reescribe los tokens --color-brand-* de src/app/globals.css
+     * automáticamente antes de cada `pnpm dev`/`pnpm build` (hooks predev/
+     * prebuild en package.json). Cambiar el color acá alcanza; no hace falta
+     * tocar globals.css a mano. Ver docs/DOCUMENTACION-PROYECTO.md sección 7.
      */
     colors: {
       accent: string;
