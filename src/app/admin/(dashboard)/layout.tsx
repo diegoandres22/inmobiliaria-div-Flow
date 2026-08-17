@@ -41,6 +41,7 @@ export default async function AdminDashboardLayout({
     { href: "/admin/leads", label: "Leads" },
     ...(agent.isSuperAgent
       ? [
+          { href: "/admin/agencias", label: "Agencias" },
           { href: "/admin/agentes", label: "Agentes" },
           { href: "/admin/auditoria", label: "Auditoría" },
         ]
