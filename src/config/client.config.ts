@@ -96,6 +96,13 @@ export interface ClientConfig {
 
   legal: {
     companyName: string;
+    /**
+     * Identificación fiscal (RIF en Venezuela, RFC/CUIT/NIT en otros países
+     * de la base). Se muestra en Términos y Política de Privacidad.
+     */
+    taxId: string;
+    /** Domicilio legal/fiscal completo. */
+    registeredAddress: string;
     /** null = no se muestra el link en el footer. */
     privacyPolicyUrl: string | null;
     termsUrl: string | null;
@@ -181,7 +188,15 @@ export const clientConfig: ClientConfig = {
   },
 
   legal: {
-    companyName: "Proyecto Inmobiliario Demo",
+    // Modo demo (Venezuela) — dato de simulación, no la razón social real.
+    // TODO(cliente real): razón social exacta tal como está inscrita.
+    companyName: "Inversiones Inmobiliarias DivFlow, C.A.",
+    // TODO(cliente real): RIF real de la empresa — esto es un dato de
+    // simulación, no corresponde a un RIF válido.
+    taxId: "J-40123456-7",
+    // TODO(cliente real): domicilio fiscal real.
+    registeredAddress:
+      "Av. Francisco de Miranda, Torre Diamen, Piso 6, Chacao, Caracas 1060, Venezuela",
     privacyPolicyUrl: null, // TODO(cliente)
     termsUrl: null, // TODO(cliente)
     footerDisclaimer: "Todos los derechos reservados.",

@@ -207,7 +207,7 @@ export function PropertyImageUpload({ images, onChange }: PropertyImageUploadPro
         ) : (
           <>
             <Upload className="size-5" />
-            Arrastrá tus fotos acá o hacé click para elegirlas
+            Arrastra tus fotos acá o eligelas una por una
           </>
         )}
         <input

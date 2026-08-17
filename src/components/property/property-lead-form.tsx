@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -72,6 +73,16 @@ export function PropertyLeadForm({ propertyId }: { propertyId: string }) {
           autoComplete="off"
         />
       </div>
+      {/* Aviso de privacidad en el punto de recolección — antes la Política
+          de Privacidad existía como página aislada sin que nada la
+          referenciara desde donde realmente se piden los datos. */}
+      <p className="text-xs text-muted-foreground">
+        Al enviar este formulario aceptás nuestra{" "}
+        <Link href="/legal/privacidad" className="underline hover:text-brand-accent-dark">
+          Política de Privacidad
+        </Link>
+        .
+      </p>
       <Button type="submit" className="w-full" disabled={status === "sending"}>
         {status === "sending" ? "Enviando..." : "Enviar mensaje"}
       </Button>

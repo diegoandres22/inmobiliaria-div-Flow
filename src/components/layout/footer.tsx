@@ -125,6 +125,9 @@ export function Footer() {
           {clientConfig.legal.footerDisclaimer}
         </p>
         <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <Link href="/legal/terminos" className="hover:text-brand-accent">
+            Términos y Condiciones
+          </Link>
           <Link href="/legal/privacidad" className="hover:text-brand-accent">
             Política de Privacidad
           </Link>
