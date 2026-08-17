@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="mx-auto max-w-5xl px-4 py-12 md:px-6 md:py-16">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12 md:px-6 md:py-16">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
           <div>
             <p className="mb-1 text-xs font-medium tracking-[0.2em] text-brand-accent-dark uppercase">
@@ -52,6 +52,6 @@ export default function ContactPage() {
       </main>
       <Footer />
       <WhatsAppCTA phoneNumber={clientConfig.contact.whatsapp ?? undefined} />
-    </>
+    </div>
   );
 }

@@ -32,9 +32,9 @@ export default function CookiesPolicyPage() {
   );
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="mx-auto max-w-3xl px-4 py-12 md:px-6 md:py-16">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 md:px-6 md:py-16">
         <p className="mb-1 text-xs font-medium tracking-[0.2em] text-brand-accent-dark uppercase">
           Legal
         </p>
@@ -105,6 +105,6 @@ export default function CookiesPolicyPage() {
       </main>
       <Footer />
       <WhatsAppCTA phoneNumber={clientConfig.contact.whatsapp ?? undefined} />
-    </>
+    </div>
   );
 }
