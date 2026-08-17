@@ -25,9 +25,9 @@ export default async function AgenciesPage() {
   const agencies = await getAgenciesWithAgents();
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="mx-auto max-w-6xl px-4 py-10 md:px-6 md:py-14">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 md:px-6 md:py-14">
         <p className="mb-1 text-xs font-medium tracking-[0.2em] text-brand-accent-dark uppercase">
           Red DivFlow
         </p>
@@ -107,6 +107,6 @@ export default async function AgenciesPage() {
       </main>
       <Footer />
       <WhatsAppCTA phoneNumber={clientConfig.contact.whatsapp ?? undefined} />
-    </>
+    </div>
   );
 }
