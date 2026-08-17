@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -76,6 +77,13 @@ export function GeneralLeadForm() {
           autoComplete="off"
         />
       </div>
+      <p className="text-xs text-muted-foreground">
+        Al enviar este formulario aceptás nuestra{" "}
+        <Link href="/legal/privacidad" className="underline hover:text-brand-accent-dark">
+          Política de Privacidad
+        </Link>
+        .
+      </p>
       <Button type="submit" className="w-full" disabled={status === "sending"}>
         {status === "sending" ? "Enviando..." : "Enviar mensaje"}
       </Button>

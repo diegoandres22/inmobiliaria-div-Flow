@@ -102,7 +102,8 @@ Es el **único archivo** que hace falta tocar para adaptar la identidad de marca
 - `brand.fonts` — si se cambia la tipografía, también hay que cargar la fuente nueva en `src/app/layout.tsx` (`next/font`); el nombre acá es solo documentación de lo que ya está cargado.
 - `contact.*` — teléfono, email, dirección, redes sociales. `contact.whatsapp` en `null` oculta el botón flotante de WhatsApp por completo (no lo deja roto apuntando a ningún lado) — poner el número en formato E.164 sin "+" (ej. `"521234567890"`) para activarlo.
 - `copy.*` — textos del hero, about, zonas de cobertura (`coverageZones`, se muestra en el footer), prompt del formulario de contacto en la ficha.
-- `legal.*` — razón social, links a política de privacidad/términos (`null` = el link no se muestra), disclaimer del footer.
+- `legal.*` — razón social (`companyName`), identificación fiscal (`taxId`: RIF/RFC/CUIT/NIT según el país), domicilio (`registeredAddress`), disclaimer del footer. Estos tres primeros alimentan `/legal/terminos` y `/legal/privacidad`.
+- **Páginas legales (`/legal/terminos`, `/legal/privacidad`, `/legal/cookies`):** el texto que trae el proyecto es una plantilla de demostración (modo Venezuela, marcada con un banner visible en cada página) — **antes de operar con un cliente real, hay que reemplazar el contenido de las 3 páginas por texto redactado y validado por un abogado en la jurisdicción real.** No hace falta tocar el diseño ni la estructura, solo el texto de cada `page.tsx` y los 3 campos de `clientConfig.legal` (`companyName`, `taxId`, `registeredAddress`). Ver `DOCUMENTACION-PROYECTO.md` sección 7.1 para el detalle de qué se citó y por qué.
 - `seo.siteUrl` — el dominio real de producción, **sin barra final**. Actualizar esto cada vez que cambie el dominio (de Vercel a uno propio, por ejemplo) — se usa en metadata, Open Graph y JSON-LD.
 
 Los campos marcados `// TODO(cliente)` en el archivo son los que hay que completar sí o sí antes de salir a producción con un cliente nuevo.
@@ -173,6 +174,7 @@ Sin estos, el job `build` del CI falla — no por un error de código, sino porq
 - [ ] Confirmar que `IP_HASH_SALT` está seteada en producción (no el fallback de desarrollo).
 - [ ] Confirmar que Upstash está realmente conectado (revisar logs — sin esto, no hay warning visible salvo el `console.warn` en los logs del servidor).
 - [ ] Revisar `get_advisors` de Supabase (seguridad y performance) antes de considerar el proyecto cerrado.
+- [ ] **Antes de un cliente real:** reemplazar el texto de `/legal/terminos`, `/legal/privacidad` y `/legal/cookies` (hoy es una plantilla de demostración para Venezuela) por contenido redactado y validado por un abogado en la jurisdicción real, y quitar el banner `LegalSimulationNotice` de las 3 páginas.
 
 ---
 

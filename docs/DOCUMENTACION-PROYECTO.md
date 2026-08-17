@@ -230,6 +230,16 @@ Esta base está diseñada para reutilizarse en clientes inmobiliarios nuevos sin
 
 ---
 
+## 7.1 Páginas legales — modo demo (Venezuela)
+
+`/legal/terminos`, `/legal/privacidad` y `/legal/cookies` existen y funcionan de punta a punta (link desde el footer, aviso con link a Privacidad en ambos formularios de captación de leads), pero el **texto es una plantilla de demostración**, no un documento legal validado — cada página muestra el banner `LegalSimulationNotice` (`src/components/legal/simulation-notice.tsx`) dejándolo explícito.
+
+Los datos de identificación (razón social, RIF, domicilio) salen de `clientConfig.legal` (`companyName`, `taxId`, `registeredAddress`) — mismo patrón de "un solo archivo" que el resto de la marca. Hoy tienen valores de simulación para Venezuela, marcados `// TODO(cliente real)`.
+
+**Nota sobre el marco legal usado en la plantilla:** Venezuela no tiene, a la fecha de esto, una ley orgánica de protección de datos personales equivalente al RGPD/LGPD/LFPDPPP de otros países de la base — el respaldo normativo citado en el texto es constitucional (Art. 28 y 60 CRBV) más la Ley Especial contra los Delitos Informáticos. Los compromisos de acceso/corrección/eliminación de datos se redactaron como compromiso voluntario de la empresa, no como enumeración de un derecho ARCO estatutario que no existe en Venezuela. Si se reutiliza esta base para un cliente en otro país, este razonamiento legal específico de Venezuela **no aplica directo** — hay que revisar el marco normativo real del país de destino antes de tocar el texto.
+
+Antes de operar con un cliente real (Venezuela u otro país), el texto de las 3 páginas debe ser reemplazado por uno redactado y validado por un abogado en la jurisdicción real — la estructura, el componente `LegalSimulationNotice`, y la fuente de datos en `client.config.ts` no necesitan tocarse, solo el contenido.
+
 ## 8. Seguridad — estado actual (agosto 2026)
 
 ### 8.1 Resuelto y verificado

@@ -3,6 +3,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { WhatsAppCTA } from "@/components/layout/whatsapp-cta";
 import { CookiePreferencesTrigger } from "@/components/cookies/cookie-preferences-trigger";
+import { LegalSimulationNotice } from "@/components/legal/simulation-notice";
 import { COOKIE_REGISTRY } from "@/lib/cookies/registry";
 import { clientConfig } from "@/config/client.config";
 
@@ -44,7 +45,11 @@ export default function CookiesPolicyPage() {
           Última actualización: {new Date().toLocaleDateString("es")}
         </p>
 
-        <div className="mt-8 space-y-8 text-sm text-foreground">
+        <div className="mt-6">
+          <LegalSimulationNotice />
+        </div>
+
+        <div className="space-y-8 text-sm text-foreground">
           <section className="space-y-2">
             <h2 className="font-heading text-base">Qué es una cookie</h2>
             <p className="text-muted-foreground">
@@ -53,10 +58,14 @@ export default function CookiesPolicyPage() {
               cualquier momento desde{" "}
               <CookiePreferencesTrigger />.
             </p>
-            <p className="rounded-[var(--radius)] border border-warning bg-warning-bg p-3 text-xs text-warning-foreground">
-              [PENDIENTE DE REVISIÓN LEGAL]: base normativa exacta (ePrivacy /
-              GDPR, LGPD, LFPDPPP u otra según el país de operación) y
-              vigencia máxima permitida por categoría.
+            <p className="text-muted-foreground">
+              Venezuela no tiene hoy una ley específica sobre cookies
+              equivalente a la directiva ePrivacy europea. Igual pedimos tu
+              consentimiento explícito antes de activar cualquier cookie que
+              no sea estrictamente necesaria para que el sitio funcione — es
+              una buena práctica que aplicamos de forma voluntaria,
+              alineada con el derecho de acceso a la información propia que
+              reconoce el artículo 28 de la Constitución.
             </p>
           </section>
 

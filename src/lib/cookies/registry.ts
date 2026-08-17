@@ -4,10 +4,12 @@
 //
 // df_fav_session se clasifica como "Esenciales" a propósito: es 100%
 // first-party, no rastrea entre sitios, y solo se crea cuando el visitante
-// hace una acción explícita (marcar un favorito) — la excepción de
-// "servicio expresamente solicitado por el usuario" del art. 5(3) de la
-// directiva ePrivacy aplica acá. [PENDIENTE DE REVISIÓN LEGAL]: confirmar
-// esta clasificación con un abogado antes de publicar a producción.
+// hace una acción explícita (marcar un favorito) — mismo criterio que usa
+// la excepción de "servicio expresamente solicitado por el usuario" del
+// art. 5(3) de la directiva ePrivacy europea, aplicado acá como buena
+// práctica aunque Venezuela no tenga una norma equivalente vigente. Antes
+// de operar con un cliente real, confirmar esta clasificación con un
+// abogado en la jurisdicción real de operación.
 export interface CookieRegistryEntry {
   name: string;
   category: "Esenciales" | "Funcionales" | "Analíticas" | "Marketing";

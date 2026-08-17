@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { WhatsAppCTA } from "@/components/layout/whatsapp-cta";
+import { LegalSimulationNotice } from "@/components/legal/simulation-notice";
 import { clientConfig } from "@/config/client.config";
 
 export const metadata: Metadata = {
@@ -9,11 +10,13 @@ export const metadata: Metadata = {
   description: `Cómo tratamos tus datos personales en ${clientConfig.brand.name}.`,
 };
 
-// Texto de referencia — el mecanismo (consentimiento de cookies, RLS,
-// derechos ARCO, etc.) ya está implementado y descrito con precisión. El
-// texto legal definitivo (base normativa exacta, plazos, datos del
-// responsable inscrito) queda marcado [PENDIENTE DE REVISIÓN LEGAL] y no
-// debe publicarse sin que lo confirme un abogado o el cliente.
+// Modo demo (Venezuela) — el mecanismo (consentimiento de cookies, RLS,
+// derechos de acceso, etc.) ya está implementado y descrito con precisión.
+// Los datos de identificación (razón social, RIF, domicilio) salen de
+// client.config.ts y son de simulación. El texto en sí es una plantilla
+// razonable para el contexto legal venezolano actual (ver nota sobre marco
+// normativo más abajo), pero no reemplaza la redacción de un abogado antes
+// de operar con datos de usuarios reales.
 export default function PrivacyPolicyPage() {
   return (
     <>
@@ -29,18 +32,19 @@ export default function PrivacyPolicyPage() {
           Última actualización: {new Date().toLocaleDateString("es")}
         </p>
 
-        <div className="mt-8 space-y-8 text-sm text-foreground">
+        <div className="mt-6">
+          <LegalSimulationNotice />
+        </div>
+
+        <div className="space-y-8 text-sm text-foreground">
           <section className="space-y-2">
             <h2 className="font-heading text-base">Quiénes somos</h2>
             <p className="text-muted-foreground">
-              {clientConfig.legal.companyName} ({clientConfig.brand.name}) opera este
-              sitio como portal inmobiliario multi-agencia. Podés contactarnos en{" "}
+              {clientConfig.legal.companyName} ({clientConfig.brand.name}),
+              RIF {clientConfig.legal.taxId}, con domicilio en{" "}
+              {clientConfig.legal.registeredAddress}, opera este sitio como
+              portal inmobiliario multi-agencia. Podés contactarnos en{" "}
               {clientConfig.contact.email}.
-            </p>
-            <p className="rounded-[var(--radius)] border border-warning bg-warning-bg p-3 text-xs text-warning-foreground">
-              [PENDIENTE DE REVISIÓN LEGAL]: razón social exacta, CUIT/RFC/NIT,
-              domicilio legal y datos de inscripción registral correspondientes
-              a la jurisdicción real de operación.
             </p>
           </section>
 
@@ -79,17 +83,40 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="space-y-2">
+            <h2 className="font-heading text-base">
+              Marco legal aplicable (Venezuela)
+            </h2>
+            <p className="text-muted-foreground">
+              Venezuela todavía no cuenta con una ley orgánica de protección
+              de datos personales equivalente al RGPD europeo o a las leyes
+              de países vecinos (México, Colombia, Argentina). El respaldo
+              normativo actual surge de la Constitución de la República
+              Bolivariana de Venezuela: el artículo 28 reconoce el derecho de
+              toda persona a acceder a la información que sobre sí misma
+              conste en registros públicos o privados, y a conocer el uso que
+              se hace de ella; el artículo 60 garantiza el derecho al honor,
+              la vida privada, la intimidad, la propia imagen, la
+              confidencialidad y la reputación. Complementariamente aplica la
+              Ley Especial contra los Delitos Informáticos en lo que
+              respecta al uso indebido de sistemas y datos.
+            </p>
+            <p className="text-muted-foreground">
+              Mientras no exista una ley específica que lo exija, los
+              compromisos de esta sección (acceso, corrección, eliminación)
+              son un compromiso voluntario de {clientConfig.brand.name},
+              alineado con buenas prácticas internacionales — no una
+              enumeración de derechos ARCO reconocidos por una ley
+              venezolana específica.
+            </p>
+          </section>
+
+          <section className="space-y-2">
             <h2 className="font-heading text-base">Tus derechos</h2>
             <p className="text-muted-foreground">
-              Podés pedirnos acceder, corregir o eliminar tus datos personales
-              escribiéndonos a {clientConfig.contact.email}.
-            </p>
-            <p className="rounded-[var(--radius)] border border-warning bg-warning-bg p-3 text-xs text-warning-foreground">
-              [PENDIENTE DE REVISIÓN LEGAL]: enumerar los derechos exactos
-              (acceso, rectificación, cancelación, oposición / portabilidad,
-              limitación) según la normativa aplicable (GDPR, LGPD, LFPDPPP,
-              etc. según el país de operación real), y el plazo de respuesta
-              legal correspondiente.
+              Podés pedirnos acceder, corregir o eliminar los datos
+              personales que tenemos sobre vos escribiéndonos a{" "}
+              {clientConfig.contact.email}. Vamos a responder tu pedido en un
+              plazo razonable, sin costo para vos.
             </p>
           </section>
 
