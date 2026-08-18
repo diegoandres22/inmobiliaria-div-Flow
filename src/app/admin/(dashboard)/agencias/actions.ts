@@ -27,6 +27,13 @@ async function requireSuperAgent() {
   return agent;
 }
 
+// Nunca mostramos error.message de Postgres crudo — se loguea server-side
+// para diagnosticar y se muestra un mensaje humano fijo en su lugar.
+function logAndThrow(context: string, error: { message: string }, fallback: string): never {
+  console.error(`[${context}]`, error.message);
+  throw new Error(fallback);
+}
+
 export async function createAgency(formData: FormData) {
   await requireSuperAgent();
 
@@ -44,7 +51,7 @@ export async function createAgency(formData: FormData) {
     slug,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) logAndThrow("createAgency", error, "No se pudo crear la agencia. Probá de nuevo.");
   revalidatePath("/admin/agencias");
   revalidatePath("/admin/agentes");
   revalidatePath("/agencias");
@@ -66,7 +73,7 @@ export async function updateAgency(agencyId: string, formData: FormData) {
     .update({ name: values.name })
     .eq("id", agencyId);
 
-  if (error) throw new Error(error.message);
+  if (error) logAndThrow("updateAgency", error, "No se pudo guardar la agencia. Probá de nuevo.");
   revalidatePath("/admin/agencias");
   revalidatePath("/admin/agentes");
   revalidatePath("/agencias");
@@ -86,7 +93,7 @@ export async function deleteAgency(agencyId: string) {
     .select("id", { count: "exact", head: true })
     .eq("agency_id", agencyId);
 
-  if (countError) throw new Error(countError.message);
+  if (countError) logAndThrow("deleteAgency/count", countError, "No se pudo eliminar la agencia. Probá de nuevo.");
   if ((count ?? 0) > 0) {
     throw new Error(
       `No se puede eliminar: todavía tiene ${count} agente${count === 1 ? "" : "s"} asociado${count === 1 ? "" : "s"}. Reasigná o eliminá esos agentes primero.`,
@@ -101,7 +108,7 @@ export async function deleteAgency(agencyId: string) {
         "No se puede eliminar: esta agencia todavía tiene datos asociados (propiedades u otros registros).",
       );
     }
-    throw new Error(error.message);
+    logAndThrow("deleteAgency/delete", error, "No se pudo eliminar la agencia. Probá de nuevo.");
   }
 
   revalidatePath("/admin/agencias");

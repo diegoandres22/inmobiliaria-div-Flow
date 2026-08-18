@@ -27,7 +27,6 @@ Está construido como una **base white-label**: toda la identidad de marca (nomb
 | **Zod** | Validación | Mismo schema de validación se comparte entre formularios client-side y Server Actions — evita que cliente y servidor validen reglas distintas. |
 | **Upstash Redis** (`@upstash/ratelimit`) | Rate limiting | Redis serverless con API HTTP (sin conexión TCP persistente) — necesario porque el rate limiting tiene que funcionar entre invocaciones frías distintas de funciones serverless en Vercel; un `Map` en memoria de proceso no sirve para eso (ver sección 8.5). |
 | **Resend** | Email transaccional | API de envío simple, tiene tier gratuito, integra con dominios verificados. Usado hoy solo para notificar cambios de contraseña; preparado para leads a futuro. |
-| **Google Maps Embed API** | Mapa en ficha de propiedad y selector de ubicación en el admin | Se eligió sobre MapTiler/MapLibre (usado en una iteración anterior) porque el embed vía `<iframe>` no requiere SDK de JS en el cliente — cero bundle extra, cero mantenimiento de una librería de mapas. |
 | **Vercel** | Hosting | Despliegue nativo de Next.js (Server Actions, ISR, Edge Middleware) sin configuración adicional. |
 
 ---
@@ -56,7 +55,6 @@ flowchart LR
 
     Next -.-> Upstash["Upstash Redis — rate limiting"]
     Next -.-> Resend["Resend — email transaccional"]
-    Next -.-> Maps["Google Maps — embed + geocoding fallback"]
 ```
 
 **Dos clientes de Supabase, con propósitos distintos:**
@@ -102,7 +100,6 @@ src/
 │   ├── email/                   ← cliente Resend + templates
 │   ├── validation/               ← schemas Zod compartidos cliente/servidor
 │   ├── images/                  ← compresión client-side antes de subir
-│   ├── maps/                    ← parser de URLs de Google Maps
 │   ├── session/                 ← favoritos por sesión anónima (cookie)
 │   └── cookies/                 ← consentimiento de cookies (banner + registry)
 └── types/                       ← tipos TS del dominio (propiedad, agente, etc.)
@@ -202,11 +199,11 @@ La IP nunca se guarda cruda: `hashIp()` la hashea con SHA-256 + salt (`IP_HASH_S
 
 ### 6.6 CRUD de propiedades (admin)
 
-`src/components/admin/new-property-form.tsx` orquesta el alta: datos básicos → ubicación (pegar URL de Google Maps, que se parsea con `src/lib/maps/parse-maps-url.ts`; si el link no trae coordenadas embebidas, hay un fallback server-side de geocoding) → comodidades → imágenes (compresión client-side antes de subir, `src/lib/images/compress-image.ts`, drag & drop con reorder y selección de portada). Todas las Server Actions de mutación (`propiedades/actions.ts`) hacen `.select()` de vuelta tras la mutación y verifican filas afectadas — si RLS bloqueó silenciosamente la operación, se informa un error real en vez de reportar éxito falso. `updatePropertyStatus` además filtra por el `status` actual conocido en el cliente (no solo por `id`), para detectar ediciones concurrentes en vez de pisarlas en silencio.
+`src/components/admin/new-property-form.tsx` orquesta el alta: datos básicos → ubicación (`LocationPicker`, `src/components/admin/location-picker.tsx` — latitud/longitud manuales, sin ningún proveedor de mapas de por medio, ver nota en sección 10) → comodidades → imágenes (compresión client-side antes de subir, `src/lib/images/compress-image.ts`, drag & drop con reorder y selección de portada). Todas las Server Actions de mutación (`propiedades/actions.ts`) hacen `.select()` de vuelta tras la mutación y verifican filas afectadas — si RLS bloqueó silenciosamente la operación, se informa un error real en vez de reportar éxito falso. `updatePropertyStatus` además filtra por el `status` actual conocido en el cliente (no solo por `id`), para detectar ediciones concurrentes en vez de pisarlas en silencio.
 
 ### 6.7 Emails transaccionales
 
-`src/lib/email/` envuelve Resend. **Degradación elegante por diseño:** sin `RESEND_API_KEY` configurada, `getResendClient()` devuelve `null` y el email simplemente no se manda (se loguea un aviso) — el flujo que originó el email (cambio de contraseña) igual se completa. Mismo criterio aplicado a Google Maps: una integración externa ausente nunca debe romper el flujo principal. Todo valor interpolado en el HTML del email (IP, nombre de agente) pasa por un `escapeHtml()` — la IP sale de un header (`x-forwarded-for`) que el cliente puede falsificar, así que no es un dato confiable para interpolar crudo.
+`src/lib/email/` envuelve Resend. **Degradación elegante por diseño:** sin `RESEND_API_KEY` configurada, `getResendClient()` devuelve `null` y el email simplemente no se manda (se loguea un aviso) — el flujo que originó el email (cambio de contraseña) igual se completa. Todo valor interpolado en el HTML del email (IP, nombre de agente) pasa por un `escapeHtml()` — la IP sale de un header (`x-forwarded-for`) que el cliente puede falsificar, así que no es un dato confiable para interpolar crudo.
 
 ### 6.8 Rate limiting
 
@@ -302,4 +299,5 @@ Ninguno de los puntos de 8.2/8.3 bloquea producción — el proyecto ya pasó po
 - El bug del SDK de Supabase con `nextLevel` en el gate de 2FA (sección 6.1) es intencional — no simplificar a `nextLevel` sin verificar primero si Supabase lo corrigió en una versión más nueva.
 - El fallback en memoria del rate limiter (sin Upstash) es intencional — preferible a bloquear login/reset/leads por completo si alguien despliega sin Upstash configurado todavía. No convertir esto en un error duro.
 - `whatsapp: null` en `client.config.ts` no es un dato faltante por accidente — es el mecanismo real para ocultar el botón de WhatsApp sin tocar código (ver sección 7 y la guía de implementación).
-- Los emails que no se envían por falta de `RESEND_API_KEY` no son un bug — es degradación elegante deliberada, igual que la ausencia de `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY` (el mapa muestra un fallback en vez de romper la página).
+- Los emails que no se envían por falta de `RESEND_API_KEY` no son un bug — es degradación elegante deliberada, no un error duro.
+- La ubicación de una propiedad (`properties.location`) se carga a mano como latitud/longitud (ver `LocationPicker`, `src/components/admin/location-picker.tsx`) — el proyecto no integra ningún proveedor de mapas (se removió Google Maps por completo el 2026-08-16); la columna sigue siendo NOT NULL en la base porque el dato en sí (para JSON-LD/SEO) se conserva, solo se dejó de mostrar/resolver visualmente.

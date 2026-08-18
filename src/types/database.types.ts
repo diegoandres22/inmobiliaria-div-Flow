@@ -289,7 +289,6 @@ export type Database = {
           bathrooms: number
           bedrooms: number
           city: string
-          country_code: string
           created_at: string
           description: string
           id: string
@@ -318,7 +317,6 @@ export type Database = {
           bathrooms?: number
           bedrooms?: number
           city: string
-          country_code: string
           created_at?: string
           description?: string
           id?: string
@@ -347,7 +345,6 @@ export type Database = {
           bathrooms?: number
           bedrooms?: number
           city?: string
-          country_code?: string
           created_at?: string
           description?: string
           id?: string
@@ -541,7 +538,6 @@ export type Database = {
           bathrooms: number | null
           bedrooms: number | null
           city: string | null
-          country_code: string | null
           created_at: string | null
           description: string | null
           id: string | null
@@ -572,7 +568,6 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           city?: string | null
-          country_code?: string | null
           created_at?: string | null
           description?: string | null
           id?: string | null
@@ -603,7 +598,6 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           city?: string | null
-          country_code?: string | null
           created_at?: string | null
           description?: string | null
           id?: string | null

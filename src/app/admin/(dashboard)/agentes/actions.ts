@@ -22,6 +22,14 @@ async function requireSuperAgent() {
   return agent;
 }
 
+// Nunca mostramos error.message de Postgres/Supabase Auth crudo — son
+// mensajes técnicos en inglés que no le dicen al agente qué hacer. Se
+// loguean server-side para diagnosticar y se muestra un mensaje humano fijo.
+function logAndThrow(context: string, error: { message: string }, fallback: string): never {
+  console.error(`[${context}]`, error.message);
+  throw new Error(fallback);
+}
+
 export async function createAgent(
   formData: FormData,
 ): Promise<{ email: string; tempPassword: string }> {
@@ -47,7 +55,8 @@ export async function createAgent(
     });
 
   if (authError || !created.user) {
-    throw new Error(authError?.message ?? "No se pudo crear la cuenta de acceso.");
+    if (authError) logAndThrow("createAgent/auth", authError, "No se pudo crear la cuenta de acceso. Probá de nuevo.");
+    throw new Error("No se pudo crear la cuenta de acceso. Probá de nuevo.");
   }
 
   // El insert en agents pasa por el cliente normal (RLS): la policy
@@ -72,7 +81,7 @@ export async function createAgent(
     // Rollback best-effort: si falla la fila de agents, no dejar una cuenta
     // de auth huérfana sin agente asociado.
     await adminClient.auth.admin.deleteUser(created.user.id);
-    throw new Error(insertError.message);
+    logAndThrow("createAgent/insert", insertError, "No se pudo crear el agente. Probá de nuevo.");
   }
 
   revalidatePath("/admin/agentes");
@@ -118,7 +127,7 @@ export async function updateAgent(agentId: string, formData: FormData) {
     })
     .eq("id", agentId);
 
-  if (error) throw new Error(error.message);
+  if (error) logAndThrow("updateAgent", error, "No se pudo guardar el agente. Probá de nuevo.");
   revalidatePath("/admin/agentes");
 }
 
@@ -147,7 +156,9 @@ export async function deleteAgent(agentId: string) {
     .eq("agent_id", agentId)
     .select("id");
 
-  if (reassignError) throw new Error(reassignError.message);
+  if (reassignError) {
+    logAndThrow("deleteAgent/reassign", reassignError, "No se pudo reasignar sus propiedades. Probá de nuevo.");
+  }
   const reassignedCount = reassigned?.length ?? 0;
 
   const { error } = await supabase.from("agents").delete().eq("id", agentId);
@@ -158,7 +169,7 @@ export async function deleteAgent(agentId: string) {
         "No se puede eliminar: este agente todavía tiene datos asociados que no se pudieron transferir.",
       );
     }
-    throw new Error(error.message);
+    logAndThrow("deleteAgent/delete", error, "No se pudo eliminar el agente. Probá de nuevo.");
   }
 
   if (agent?.auth_user_id) {

@@ -3,7 +3,7 @@ import { Building2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAgent } from "@/lib/queries/get-current-agent";
 import { CreateAgencyForm } from "@/components/admin/create-agency-form";
-import { AgencyRow, AGENCY_ROW_GRID } from "@/components/admin/agency-row";
+import { AgencyRow } from "@/components/admin/agency-row";
 
 export default async function AdminAgenciesPage() {
   const currentAgent = await getCurrentAgent();
@@ -68,16 +68,6 @@ export default async function AdminAgenciesPage() {
           </p>
         ) : (
           <div className="overflow-hidden rounded-[var(--radius)] border border-border bg-background">
-            {/* Encabezado de tabla — oculto en mobile, donde cada fila se
-                apila sola (misma grilla, ver AGENCY_ROW_GRID). */}
-            <div
-              className={`${AGENCY_ROW_GRID} hidden border-b border-border bg-brand-neutral px-4 py-3 text-xs font-medium tracking-wide text-muted-foreground uppercase md:grid`}
-            >
-              <span>Agencia</span>
-              <span>Agentes</span>
-              <span>Creada</span>
-              <span className="text-right">Acciones</span>
-            </div>
             <div className="divide-y divide-border">
               {agencyList.map((agency) => (
                 <AgencyRow
@@ -85,7 +75,6 @@ export default async function AdminAgenciesPage() {
                   agency={{
                     id: agency.id,
                     name: agency.name,
-                    slug: agency.slug,
                     createdAt: agency.created_at,
                   }}
                   agentCount={countByAgency.get(agency.id) ?? 0}

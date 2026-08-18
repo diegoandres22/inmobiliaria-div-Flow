@@ -3,6 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
+// Nunca mostramos error.message de Postgres crudo — se loguea server-side
+// para diagnosticar y se muestra un mensaje humano fijo en su lugar.
+function logAndThrow(context: string, error: { message: string }, fallback: string): never {
+  console.error(`[${context}]`, error.message);
+  throw new Error(fallback);
+}
+
 // Auditoría 2026-08-15 (A2): estas tres acciones no chequeaban nada a nivel
 // app, dependían 100% de RLS. Ahora que la policy de `leads` está scopeada
 // por agencia/propiedad (fix del hallazgo C1), un intento sobre un lead ajeno
@@ -17,7 +24,7 @@ export async function markLeadHandled(leadId: string) {
     .eq("id", leadId)
     .select("id");
 
-  if (error) throw new Error(error.message);
+  if (error) logAndThrow("markLeadHandled", error, "No se pudo actualizar el lead. Probá de nuevo.");
   if (!data || data.length === 0) {
     throw new Error("No se pudo actualizar: no tenés permiso sobre este lead.");
   }
@@ -32,7 +39,7 @@ export async function markLeadUnhandled(leadId: string) {
     .eq("id", leadId)
     .select("id");
 
-  if (error) throw new Error(error.message);
+  if (error) logAndThrow("markLeadUnhandled", error, "No se pudo actualizar el lead. Probá de nuevo.");
   if (!data || data.length === 0) {
     throw new Error("No se pudo actualizar: no tenés permiso sobre este lead.");
   }
@@ -47,7 +54,7 @@ export async function deleteLead(leadId: string) {
     .eq("id", leadId)
     .select("id");
 
-  if (error) throw new Error(error.message);
+  if (error) logAndThrow("deleteLead", error, "No se pudo eliminar el lead. Probá de nuevo.");
   if (!data || data.length === 0) {
     throw new Error("No se pudo eliminar: no tenés permiso sobre este lead.");
   }

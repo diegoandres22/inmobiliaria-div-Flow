@@ -5,7 +5,6 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { WhatsAppCTA } from "@/components/layout/whatsapp-cta";
 import { PropertyGallery } from "@/components/property/property-gallery";
-import { PropertyMap } from "@/components/property/property-map";
 import { PropertyAmenities } from "@/components/property/property-amenities";
 import { PropertyContactCard } from "@/components/property/property-contact-card";
 import { PropertyLeadForm } from "@/components/property/property-lead-form";
@@ -15,7 +14,17 @@ import { ShareProperty } from "@/components/property/share-property";
 import { createClient } from "@/lib/supabase/server";
 import { getFavoriteIds } from "@/lib/queries/get-favorite-ids";
 import { clientConfig } from "@/config/client.config";
-import type { PropertyDetail } from "@/types/property";
+import type { OperationType, PropertyDetail } from "@/types/property";
+
+// Mismo mapping que ya usan property-card.tsx y comparar/page.tsx — no hay
+// una fuente centralizada para esto todavía (ver DOCUMENTACION-PROYECTO.md
+// sección de deuda técnica), se mantiene la duplicación existente en vez de
+// refactorizar algo fuera del alcance de este cambio.
+const OPERATION_LABEL: Record<OperationType, string> = {
+  venta: "Venta",
+  alquiler: "Alquiler",
+  alquiler_temporal: "Alquiler temporal",
+};
 
 interface PropertyPageProps {
   params: Promise<{ slug: string }>;
@@ -120,7 +129,6 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
       streetAddress: property.addressLine,
       addressLocality: property.city,
       addressRegion: property.stateRegion,
-      addressCountry: property.countryCode,
     },
     geo: {
       "@type": "GeoCoordinates",
@@ -180,11 +188,13 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
                     slug={property.slug}
                     title={property.title}
                     priceLabel={formatPrice(property)}
+                    operationLabel={OPERATION_LABEL[property.operationType]}
                     city={property.city}
                     stateRegion={property.stateRegion}
                     bedrooms={property.bedrooms}
                     bathrooms={property.bathrooms}
                     areaBuiltM2={property.areaBuiltM2}
+                    imageUrl={property.images[0]?.url}
                     className="[&>*]:border [&>*]:border-border"
                   />
                 </div>
@@ -241,17 +251,6 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
               </div>
             )}
 
-            <div>
-              <h2 className="font-heading text-lg text-foreground">
-                Ubicación
-              </h2>
-              <PropertyMap
-                lat={property.lat}
-                lng={property.lng}
-                title={property.title}
-                className="mt-2 h-80 w-full"
-              />
-            </div>
           </div>
 
           <div className="space-y-6">

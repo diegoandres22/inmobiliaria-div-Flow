@@ -173,9 +173,6 @@ export async function middleware(request: NextRequest) {
       "img-src 'self' data: https://images.unsplash.com https://*.supabase.co",
       "connect-src 'self' https://*.supabase.co https://www.google-analytics.com",
       "font-src 'self' data:",
-      // Mapa embebido (PropertyMap / LocationPicker) — Google Maps Embed API
-      // se sirve desde este origen dentro de un iframe.
-      "frame-src https://www.google.com",
       "frame-ancestors 'none'",
     ].join("; "),
   );

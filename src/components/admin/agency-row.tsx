@@ -13,16 +13,15 @@ interface AgencyRowProps {
   agency: {
     id: string;
     name: string;
-    slug: string;
     createdAt: string;
   };
   agentCount: number;
 }
 
-// Misma grilla en el header (agencias/page.tsx) y en cada fila — así se ve
-// como una tabla real en escritorio (columnas alineadas) y se apila sola en
-// mobile sin duplicar el layout en dos componentes distintos.
-export const AGENCY_ROW_GRID =
+// Grilla propia de la fila (ya no hay un header de tabla separado que
+// tenga que compartirla — cada fila es autodescriptiva: el badge ya dice
+// "N agentes", la fecha ya se lee como fecha).
+const AGENCY_ROW_GRID =
   "grid grid-cols-1 gap-2 md:grid-cols-[1fr_150px_140px_190px] md:items-center md:gap-4";
 
 export function AgencyRow({ agency, agentCount }: AgencyRowProps) {
@@ -84,7 +83,6 @@ export function AgencyRow({ agency, agentCount }: AgencyRowProps) {
     <div className={`${AGENCY_ROW_GRID} p-4 transition-colors hover:bg-brand-neutral/60`}>
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-foreground">{agency.name}</p>
-        <p className="truncate font-mono text-xs text-muted-foreground">{agency.slug}</p>
       </div>
 
       <div>

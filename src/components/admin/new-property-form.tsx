@@ -77,7 +77,7 @@ export function NewPropertyForm({ categories, amenities }: NewPropertyFormProps)
       setFieldErrors(nextErrors);
       setSubmitError(
         !location
-          ? "Falta confirmar la ubicación — pegá el enlace de Maps o marcala manualmente."
+          ? "Falta la ubicación — ingresá latitud y longitud."
           : "Revisá los campos marcados en rojo.",
       );
       return;
@@ -232,7 +232,7 @@ export function NewPropertyForm({ categories, amenities }: NewPropertyFormProps)
             <p className="text-xs text-destructive">{fieldErrors.addressLine}</p>
           )}
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Input
               name="city"
@@ -246,29 +246,13 @@ export function NewPropertyForm({ categories, amenities }: NewPropertyFormProps)
           <div className="space-y-1.5">
             <Input
               name="stateRegion"
-              placeholder="Estado/Región"
+              placeholder="Parroquia/Municipio"
               required
               aria-invalid={Boolean(fieldErrors.stateRegion)}
               onBlur={(e) => validateField("stateRegion", e.target.value)}
             />
             {fieldErrors.stateRegion && (
               <p className="text-xs text-destructive">{fieldErrors.stateRegion}</p>
-            )}
-          </div>
-          <div className="space-y-1.5">
-            <Input
-              name="countryCode"
-              placeholder="País (MX, CO...)"
-              maxLength={2}
-              required
-              aria-invalid={Boolean(fieldErrors.countryCode)}
-              onBlur={(e) => validateField("countryCode", e.target.value.toUpperCase())}
-              onChange={(e) => {
-                e.target.value = e.target.value.toUpperCase();
-              }}
-            />
-            {fieldErrors.countryCode && (
-              <p className="text-xs text-destructive">{fieldErrors.countryCode}</p>
             )}
           </div>
         </div>
