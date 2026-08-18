@@ -12,7 +12,7 @@
 |---|---|---|---|
 | **Supabase** | Base de datos, autenticación, storage de imágenes | Free (Pro si se quiere "Leaked Password Protection", ver 3.3) | Sí |
 | **Vercel** | Hosting del sitio | Free (Hobby) | Sí |
-| **Google Cloud Console** | Login con Google (OAuth) + Google Maps Embed API + Geocoding (opcional) | Free (Maps tiene cuota gratuita mensual) | Google OAuth y Maps Embed sí; Geocoding no |
+| **Google Cloud Console** | Login con Google (OAuth) | Free | Sí |
 | **Upstash** | Rate limiting distribuido (login, reset de contraseña, leads) | Free | Recomendado fuerte — sin esto el rate limiting no protege nada en producción real (ver `DOCUMENTACION-PROYECTO.md`, sección 6.8) |
 | **Resend** | Email transaccional (aviso de cambio de contraseña) | Free (100 emails/día) | No — sin esto los emails simplemente no se mandan, el resto del sitio funciona igual |
 | **Un dominio propio** | Branding correcto (URL del sitio, pantalla de login de Google, SMTP con Resend) | — | No para lanzar, sí recomendado apenas se pueda |
@@ -80,14 +80,12 @@ Copiar `.env.example` a `.env.local` (desarrollo) y cargar las mismas en Vercel 
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API → `anon` `public` key | Sí |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API → `service_role` key. **Nunca** exponer con prefijo `NEXT_PUBLIC_`, nunca commitear | Sí |
 | `DATABASE_URL` | Supabase → Project Settings → Database → Connection string | Solo si algo se conecta directo a Postgres fuera de la API de Supabase |
-| `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY` | Google Cloud Console → Credentials → API key, restringida por HTTP referrer al dominio del sitio | No — sin esto el mapa muestra un fallback, las coordenadas se guardan igual |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Upstash → crear una base Redis → REST API | Recomendado fuerte |
 | `RESEND_API_KEY` | Resend → API Keys | No |
 | `RESEND_FROM_EMAIL` | Formato `"Nombre <email@tudominio.com>"`. Sin dominio verificado, se puede usar el sandbox `onboarding@resend.dev` (no apto para producción real) | No |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile — opcional, solo si el honeypot de leads no alcanza | No |
 | `IP_HASH_SALT` | Cualquier string largo y secreto, generado una vez (ej. `openssl rand -hex 32`) | Sí en producción — sin esto usa un fallback hardcodeado y público, anulando la anonimización de IP en `leads.ip_hash` |
 | `NEXT_PUBLIC_ANALYTICS_ID` | Google Analytics 4 — opcional, solo carga si el visitante acepta la categoría "Analíticas" del banner de cookies | No |
-| `GOOGLE_MAPS_GEOCODING_API_KEY` | Google Cloud Console — fallback server-side cuando el link de Maps pegado en el admin no trae coordenadas embebidas | No |
 
 **En Vercel específicamente:** si el dashboard bloquea la creación de una variable `NEXT_PUBLIC_*` con el aviso "Mantenga este valor en privado. El prefijo NEXT_PUBLIC_ expone este valor al navegador" — **no** quitar el prefijo `NEXT_PUBLIC_` (rompe el cliente de Supabase en el browser). Ese aviso aparece cuando la variable quedó marcada como "Sensitive" (encriptada, ilegible después de creada) — para una variable que necesita ir al bundle del cliente, desmarcar "Sensitive" al crearla, o desactivar la política de equipo "Enforce Sensitive Environment Variables" en *Team Settings → Security & Privacy* si está forzada a nivel organización.
 
@@ -141,14 +139,7 @@ Los campos marcados `// TODO(cliente)` en el archivo son los que hay que complet
 2. Copiar `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN` desde el dashboard de la base (REST API, no la conexión Redis nativa).
 3. Cargar ambas en `.env.local` y en Vercel. Sin esto, el rate limiting sigue funcionando en desarrollo pero no protege nada real en producción (cada instancia serverless tiene su propio contador en memoria).
 
-### 3.11 Google Maps
-
-1. Google Cloud Console → habilitar **Maps Embed API**.
-2. Crear una API key, restringirla por **HTTP referrer** al dominio del sitio (no por IP — es una clave client-side, va en el `src` del `<iframe>`).
-3. Cargarla como `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY`.
-4. Opcional: habilitar **Geocoding API** y cargar `GOOGLE_MAPS_GEOCODING_API_KEY` (server-side, no restringir por referrer) — mejora la resolución automática de coordenadas cuando el link de Google Maps pegado en el admin no las trae embebidas. Sin esto, el parseo por regex y la carga manual de lat/lng siguen funcionando.
-
-### 3.12 GitHub Actions (CI)
+### 3.11 GitHub Actions (CI)
 
 `.github/workflows/ci.yml` corre automáticamente `pnpm typecheck`/`pnpm lint` en cada PR/push a `develop` y `main` (no necesitan secrets), y `pnpm build` en un segundo job que sí los necesita. En el repo de GitHub: *Settings → Secrets and variables → Actions → New repository secret*, cargar como mínimo:
 
@@ -156,11 +147,10 @@ Los campos marcados `// TODO(cliente)` en el archivo son los que hay que complet
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `IP_HASH_SALT`
-- `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY` (si se usa Maps)
 
 Sin estos, el job `build` del CI falla — no por un error de código, sino porque `src/env.ts` corta el build al no encontrar las variables (ver 3.4). El job `typecheck-and-lint` sí corre en verde sin ningún secret configurado.
 
-### 3.13 QA final antes de recibir tráfico real
+### 3.12 QA final antes de recibir tráfico real
 
 - [ ] `pnpm typecheck && pnpm lint && pnpm build` pasan limpio localmente.
 - [ ] El CI de GitHub Actions corre en verde en el PR de `develop` → `main` (ambos jobs, incluido `build` con los Secrets cargados).
@@ -182,7 +172,7 @@ Sin estos, el job `build` del CI falla — no por un error de código, sino porq
 
 Este proyecto usa **`develop`** como rama de trabajo diario y **`main`** como rama de producción (la que Vercel despliega). Regla establecida para este proyecto: **todo commit va directo a `develop`, nunca se crea una rama nueva por feature/fix.** Cuando `develop` está listo para salir a producción, se fusiona a `main` (vía PR en GitHub o merge directo) y se pushea — eso dispara el redeploy en Vercel.
 
-Antes de fusionar `develop` → `main`, correr la QA de la sección 3.12 sobre `develop`.
+Antes de fusionar `develop` → `main`, correr la QA de la sección 3.11 sobre `develop`.
 
 ---
 
@@ -199,5 +189,5 @@ Antes de fusionar `develop` → `main`, correr la QA de la sección 3.12 sobre `
 | Toggle "Leaked Password Protection" no aparece en el dashboard de Supabase | Feature gateada al plan Pro | Confirmar el plan del proyecto; no es un problema de navegación de la UI |
 | `git checkout <rama>` falla con `fatal: not a git repository` | La carpeta `.git` se borró o se corrompió | `git init && git remote add origin <url> && git fetch origin && git symbolic-ref HEAD refs/heads/develop && git update-ref refs/heads/develop origin/develop && git reset` — reconecta el repo sin tocar ningún archivo del working tree |
 | Warning de hidratación en consola con atributos `bis_skin_checked` | Extensión del navegador (Bitdefender) inyectando atributos en el DOM antes de que React hidrate | No es un bug del código — probar en incógnito sin extensiones para confirmar |
-| El job `build` del CI (GitHub Actions) falla, pero `typecheck-and-lint` pasa | Faltan los Secrets del repo (ver 3.12) | Cargar `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`/`SUPABASE_SERVICE_ROLE_KEY`/`IP_HASH_SALT` en Settings → Secrets and variables → Actions |
+| El job `build` del CI (GitHub Actions) falla, pero `typecheck-and-lint` pasa | Faltan los Secrets del repo (ver 3.11) | Cargar `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`/`SUPABASE_SERVICE_ROLE_KEY`/`IP_HASH_SALT` en Settings → Secrets and variables → Actions |
 | `next build`/`next dev` corta con "Configuración de entorno inválida" | `src/env.ts` detectó una variable requerida faltante o con formato inválido (ver mensaje, indica cuál) | Completar `.env.local` (dev) o las Environment Variables de Vercel (prod) según el mensaje — no es un bug, es la validación funcionando |

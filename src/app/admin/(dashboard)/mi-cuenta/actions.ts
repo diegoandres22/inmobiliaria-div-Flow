@@ -37,7 +37,7 @@ async function removeOldAvatarFile(
 // auth.uid() directo (ver migración create_agent_avatars_bucket).
 export async function uploadAvatar(formData: FormData): Promise<{ error?: string }> {
   const agent = await getCurrentAgent();
-  if (!agent) throw new Error("No autenticado.");
+  if (!agent) return { error: "Tu sesión expiró — volvé a iniciar sesión." };
 
   const file = formData.get("avatar");
   if (!(file instanceof File) || file.size === 0) {
@@ -51,7 +51,7 @@ export async function uploadAvatar(formData: FormData): Promise<{ error?: string
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("No autenticado.");
+  if (!user) return { error: "Tu sesión expiró — volvé a iniciar sesión." };
 
   const { data: current } = await supabase
     .from("agents")
@@ -77,7 +77,8 @@ export async function uploadAvatar(formData: FormData): Promise<{ error?: string
 
   if (dbError) {
     await supabase.storage.from("agent-avatars").remove([path]);
-    return { error: dbError.message };
+    console.error("[uploadAvatar/db]", dbError.message);
+    return { error: "La foto se subió pero no se pudo guardar. Probá de nuevo." };
   }
 
   await removeOldAvatarFile(supabase, current?.photo_path ?? null);
@@ -89,7 +90,7 @@ export async function uploadAvatar(formData: FormData): Promise<{ error?: string
 
 export async function removeAvatar(): Promise<{ error?: string }> {
   const agent = await getCurrentAgent();
-  if (!agent) throw new Error("No autenticado.");
+  if (!agent) return { error: "Tu sesión expiró — volvé a iniciar sesión." };
 
   const supabase = await createClient();
   const { data: current } = await supabase
@@ -102,7 +103,10 @@ export async function removeAvatar(): Promise<{ error?: string }> {
     .from("agents")
     .update({ photo_path: null })
     .eq("id", agent.id);
-  if (error) return { error: error.message };
+  if (error) {
+    console.error("[removeAvatar]", error.message);
+    return { error: "No se pudo quitar la foto. Probá de nuevo." };
+  }
 
   await removeOldAvatarFile(supabase, current?.photo_path ?? null);
 
@@ -129,7 +133,7 @@ export async function changePassword(formData: FormData): Promise<{ error?: stri
   }
 
   const agent = await getCurrentAgent();
-  if (!agent) throw new Error("No autenticado.");
+  if (!agent) return { error: "Tu sesión expiró — volvé a iniciar sesión." };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({

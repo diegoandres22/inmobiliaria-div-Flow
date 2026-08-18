@@ -42,8 +42,6 @@ const envSchema = z.object({
   // Upstash mal pegada) es peor que no configurarla, porque parece andar
   // pero no protege nada.
   DATABASE_URL: z.string().url().optional(),
-  NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY: z.string().min(1).optional(),
-  GOOGLE_MAPS_GEOCODING_API_KEY: z.string().min(1).optional(),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),

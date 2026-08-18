@@ -5,7 +5,10 @@ import { z } from "zod";
 // admin/propiedades/actions.ts) para que nunca choque con el unique
 // constraint de la base ni dependa de que el usuario tipee algo válido.
 export const agencyFormSchema = z.object({
-  name: z.string().min(2, "Mínimo 2 caracteres").max(120),
+  name: z
+    .string("Escribí el nombre de la agencia.")
+    .min(2, "El nombre es muy corto.")
+    .max(120, "El nombre es muy largo."),
 });
 
 export type AgencyFormValues = z.infer<typeof agencyFormSchema>;

@@ -16,7 +16,7 @@ export const propertyFilterSchema = z
         "finca",
       ])
       .optional(),
-    ciudad: z.string().min(1).max(80).optional(),
+    ciudad: z.string().min(1, "Escribí una ciudad.").max(80, "Ese nombre de ciudad es muy largo.").optional(),
     precioMin: z.coerce.number().nonnegative().optional(),
     precioMax: z.coerce.number().nonnegative().optional(),
     habitaciones: z.coerce.number().int().nonnegative().optional(),

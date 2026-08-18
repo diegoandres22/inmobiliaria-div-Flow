@@ -12,6 +12,22 @@ type PropertyStatus = Database["public"]["Enums"]["property_status"];
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 8);
 
+// Nunca mostramos error.message de Postgres/Supabase crudo al agente — son
+// mensajes técnicos en inglés (o con nombres de columnas/constraints) que no
+// dicen nada útil de qué hacer. Se loguean server-side para diagnosticar y se
+// muestra siempre un mensaje humano genérico en su lugar.
+function logAndThrow(context: string, error: { message: string }, fallback: string): never {
+  console.error(`[${context}]`, error.message);
+  throw new Error(fallback);
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  borrador: "Borrador",
+  publicada: "Publicada",
+  pausada: "Pausada",
+  archivada: "Archivada",
+};
+
 function slugify(text: string) {
   return text
     .toLowerCase()
@@ -80,7 +96,6 @@ export async function createProperty(
       address_line: values.addressLine,
       city: values.city,
       state_region: values.stateRegion,
-      country_code: values.countryCode,
       location: `SRID=4326;POINT(${values.lng} ${values.lat})`,
       agent_id: agent.id,
       agency_id: agent.agency_id,
@@ -90,7 +105,8 @@ export async function createProperty(
     .single();
 
   if (error || !created) {
-    throw new Error(error?.message ?? "No se pudo crear la propiedad.");
+    if (error) logAndThrow("createProperty", error, "No se pudo crear la propiedad. Probá de nuevo.");
+    throw new Error("No se pudo crear la propiedad. Probá de nuevo.");
   }
 
   const selectedAmenities = formData.getAll("amenities") as string[];
@@ -119,7 +135,7 @@ export async function deleteProperty(propertyId: string) {
     .eq("id", propertyId)
     .select("id");
 
-  if (error) throw new Error(error.message);
+  if (error) logAndThrow("deleteProperty", error, "No se pudo eliminar la propiedad. Probá de nuevo.");
   if (!data || data.length === 0) {
     throw new Error("No se pudo eliminar: no tenés permiso sobre esta propiedad.");
   }
@@ -142,7 +158,9 @@ export async function updatePropertyStatus(
   nextStatus: string,
 ) {
   if (!STATUS_TRANSITIONS[currentStatus]?.includes(nextStatus)) {
-    throw new Error(`Transición inválida: ${currentStatus} → ${nextStatus}`);
+    const from = STATUS_LABEL[currentStatus] ?? currentStatus;
+    const to = STATUS_LABEL[nextStatus] ?? nextStatus;
+    throw new Error(`No se puede pasar de "${from}" a "${to}" directamente.`);
   }
 
   const supabase = await createClient();
@@ -169,7 +187,7 @@ export async function updatePropertyStatus(
     .eq("status", currentStatus as PropertyStatus)
     .select("id");
 
-  if (error) throw new Error(error.message);
+  if (error) logAndThrow("updatePropertyStatus", error, "No se pudo actualizar el estado. Probá de nuevo.");
   if (!data || data.length === 0) {
     throw new Error(
       "No se pudo actualizar: la propiedad ya no está en el estado esperado (alguien más la modificó) o no tenés permiso. Recargá la página.",
@@ -182,7 +200,18 @@ export async function updatePropertyStatus(
 // la sesión, igual que en createProperty. RLS (agents_manage_own_properties)
 // es la segunda barrera: si alguien intenta editar una propiedad que no es
 // suya, el UPDATE afecta 0 filas.
-export async function updateProperty(propertyId: string, formData: FormData) {
+//
+// Ya no redirige internamente (antes hacía redirect() acá mismo): el
+// formulario de edición pasó de <form action={...}> puro a un componente
+// cliente (EditPropertyForm) que llama a esto con try/catch para poder
+// mostrar los errores de validación en pantalla — antes, cualquier error acá
+// no tenía dónde mostrarse y el agente veía la pantalla de error genérica de
+// Next. Devolver el id y dejar que el cliente navegue es el mismo patrón que
+// ya usa createProperty.
+export async function updateProperty(
+  propertyId: string,
+  formData: FormData,
+): Promise<{ id: string }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -212,13 +241,12 @@ export async function updateProperty(propertyId: string, formData: FormData) {
       address_line: values.addressLine,
       city: values.city,
       state_region: values.stateRegion,
-      country_code: values.countryCode,
       location: `SRID=4326;POINT(${values.lng} ${values.lat})`,
     })
     .eq("id", propertyId)
     .select("id");
 
-  if (error) throw new Error(error.message);
+  if (error) logAndThrow("updateProperty", error, "No se pudo guardar la propiedad. Probá de nuevo.");
   // Auditoría 2026-08-15 (A2): antes esto redirigía igual aunque RLS hubiera
   // bloqueado el UPDATE (0 filas afectadas) — parecía guardado y no se había
   // tocado nada. El comentario original decía "RLS es la segunda barrera",
@@ -240,7 +268,7 @@ export async function updateProperty(propertyId: string, formData: FormData) {
 
   revalidatePath("/admin/propiedades");
   revalidatePath(`/admin/propiedades/${propertyId}`);
-  redirect("/admin/propiedades");
+  return { id: propertyId };
 }
 
 // Sube a Storage (bucket "property-images", creado en FASE 2) y crea las
@@ -308,7 +336,8 @@ export async function uploadPropertyImages(
       .upload(path, file, { contentType: validation.mime, upsert: false });
 
     if (uploadError) {
-      errors.push(`"${file.name}": no se pudo subir (${uploadError.message}).`);
+      console.error("[uploadPropertyImages/storage]", uploadError.message);
+      errors.push(`"${file.name}": no se pudo subir. Probá de nuevo.`);
       continue;
     }
 
@@ -340,7 +369,8 @@ export async function uploadPropertyImages(
 
     if (insertError) {
       await supabase.storage.from("property-images").remove([path]);
-      errors.push(`"${file.name}": se subió pero no se pudo registrar (${insertError.message}).`);
+      console.error("[uploadPropertyImages/insert]", insertError.message);
+      errors.push(`"${file.name}": se subió pero no se pudo guardar. Probá subirla de nuevo.`);
       continue;
     }
 
@@ -362,7 +392,7 @@ export async function deletePropertyImage(propertyId: string, imageId: string) {
     .eq("property_id", propertyId)
     .select("id");
 
-  if (error) throw new Error(error.message);
+  if (error) logAndThrow("deletePropertyImage", error, "No se pudo eliminar la imagen. Probá de nuevo.");
   if (!data || data.length === 0) {
     throw new Error("No se pudo eliminar: no tenés permiso sobre esta imagen.");
   }
@@ -383,6 +413,6 @@ export async function setCoverImage(propertyId: string, imageId: string) {
     p_image_id: imageId,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) logAndThrow("setCoverImage", error, "No se pudo cambiar la portada. Probá de nuevo.");
   revalidatePath(`/admin/propiedades/${propertyId}`);
 }

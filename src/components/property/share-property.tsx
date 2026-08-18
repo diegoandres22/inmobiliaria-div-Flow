@@ -17,11 +17,15 @@ interface SharePropertyProps {
   slug: string;
   title: string;
   priceLabel: string;
+  operationLabel: string;
   city: string;
   stateRegion: string;
   bedrooms: number;
   bathrooms: number;
   areaBuiltM2: number;
+  /** URL pública (Supabase Storage) de la imagen de portada — se intenta
+   * adjuntar como File en el share nativo, ver handleNativeShare. */
+  imageUrl?: string;
   className?: string;
 }
 
@@ -32,11 +36,13 @@ export function ShareProperty({
   slug,
   title,
   priceLabel,
+  operationLabel,
   city,
   stateRegion,
   bedrooms,
   bathrooms,
   areaBuiltM2,
+  imageUrl,
   className,
 }: SharePropertyProps) {
   const [copied, setCopied] = useState(false);
@@ -64,9 +70,12 @@ export function ShareProperty({
     .filter(Boolean)
     .join(" · ");
 
-  const message = [`${title}`, `${priceLabel} · ${city}, ${stateRegion}`, specs, url].join(
-    "\n",
-  );
+  // Resumen con lo que un agente necesita ver de un vistazo: título,
+  // operación (Venta/Alquiler), precio, ubicación y specs — mismo orden en
+  // el mensaje de WhatsApp y en el texto del share nativo (handleNativeShare
+  // más abajo), para que no diverjan entre los dos canales.
+  const summaryLine = `${operationLabel} · ${priceLabel} · ${city}, ${stateRegion}`;
+  const message = [title, summaryLine, specs, url].join("\n");
 
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(message)}`;
 
@@ -82,8 +91,35 @@ export function ShareProperty({
   }
 
   async function handleNativeShare() {
+    const text = [summaryLine, specs].filter(Boolean).join(" · ");
+
+    // Intento con la imagen de portada adjunta como File — es lo que hace
+    // que la hoja de compartir del SO (y apps como WhatsApp/Instagram)
+    // muestren la foto en vez de solo un link pelado. navigator.share con
+    // `files` requiere navigator.canShare({ files }) explícito (soporte
+    // real, no solo que el método exista) — sin eso, cae al share de texto
+    // + URL de siempre. Si el fetch de la imagen falla (ej. red, CORS),
+    // también cae al mismo fallback: nunca deja al usuario sin poder
+    // compartir por un problema con la foto.
+    let file: File | null = null;
+    if (imageUrl && navigator.canShare) {
+      try {
+        const res = await fetch(imageUrl);
+        const blob = await res.blob();
+        const extension = blob.type.split("/")[1] ?? "jpg";
+        const candidate = new File([blob], `${slug}.${extension}`, {
+          type: blob.type || "image/jpeg",
+        });
+        if (navigator.canShare({ files: [candidate] })) file = candidate;
+      } catch {
+        // Sin imagen — comparte solo texto + URL más abajo.
+      }
+    }
+
     try {
-      await navigator.share({ title, text: `${priceLabel} · ${city}, ${stateRegion}`, url });
+      await navigator.share(
+        file ? { title, text, files: [file] } : { title, text, url },
+      );
     } catch {
       // El usuario cerró la hoja de compartir o el navegador la canceló —
       // no es un error real, no hace falta un toast.

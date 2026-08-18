@@ -57,7 +57,11 @@ export function MfaEnroll({ initialFactor }: { initialFactor: ActiveFactor | nul
     });
 
     if (enrollError || !data) {
-      setError(enrollError?.message ?? "No se pudo iniciar la activación.");
+      // No mostramos enrollError.message crudo — es el mensaje de la API de
+      // Supabase Auth, en inglés y sin traducir (ver DOCUMENTACION-PROYECTO.md
+      // sección 8, mensajes de error). Queda logueado para diagnosticar.
+      if (enrollError) console.error("[mfa.enroll]", enrollError.message);
+      setError("No se pudo iniciar la activación. Probá de nuevo en unos segundos.");
       setEnrolling(false);
       return;
     }
@@ -114,8 +118,10 @@ export function MfaEnroll({ initialFactor }: { initialFactor: ActiveFactor | nul
         factorId: factor.id,
       });
       if (unenrollError) {
-        setDisableError(unenrollError.message);
-        toast.error(unenrollError.message);
+        console.error("[mfa.unenroll]", unenrollError.message);
+        const message = "No se pudo desactivar. Probá de nuevo en unos segundos.";
+        setDisableError(message);
+        toast.error(message);
         return;
       }
       setFactor(null);

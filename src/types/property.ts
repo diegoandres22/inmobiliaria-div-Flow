@@ -75,7 +75,6 @@ export interface Property {
   addressLine: string;
   city: string;
   stateRegion: string;
-  countryCode: string;
   lat: number;
   lng: number;
   agentId: string;
